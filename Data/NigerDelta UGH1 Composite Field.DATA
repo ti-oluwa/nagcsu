@@ -1,0 +1,613 @@
+-- =================================================================
+-- N/AGCSU RESEARCH PROGRAMME -- PHASE 2 DYNAMIC RESERVOIR SIMULATION
+-- Synthetic composite pilot-sector model: "UGH-1" (OML 30 / Ughelli
+-- depobelt analog, Delta State, onshore Niger Delta)
+--
+-- STATUS: Fully synthetic but literature/analog-calibrated dataset,
+-- built because operator-grade field data could not be obtained
+-- (see accompanying "Dataset Documentation" for every source and
+-- correlation used, and the calibration point: the EK6 tank-model
+-- data supplied by the user, treated as the one authentic Niger-
+-- Delta-consistent anchor point). Representative/analog model only
+-- -- not a validated replica of any specific real reservoir.
+--
+-- Engine: OPM Flow (black-oil, 3-phase, corner-point-free box grid)
+-- Units : Field (psia, STB, Mscf, ft, cp, lb/ft3)
+-- =================================================================
+
+RUNSPEC
+
+TITLE
+ NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR
+
+DIMENS
+ 30  30  5  /
+
+OIL
+GAS
+WATER
+DISGAS
+
+FIELD
+
+TABDIMS
+ 1  1  30  30  1  30 /
+
+WELLDIMS
+ 12  5  1  12 /
+
+AQUDIMS
+ 1  1  1  36  1*  1* /
+
+EQLDIMS
+-- NTEQUL NDPRVD NDRXVD NTTRVD NSTRVD
+   1 /
+
+START
+ 1 JAN 1976 /
+
+NSTACK
+ 25 /
+
+UNIFOUT
+UNIFIN
+
+-- =================================================================
+GRID
+-- =================================================================
+NOECHO
+
+DX
+ 4500*200.0 /
+DY
+ 4500*200.0 /
+
+TOPS
+ 900*8200.0 /
+
+DZ
+ 900*40.0
+ 900*60.0
+ 900*35.0
+ 900*55.0
+ 900*45.0 /
+
+EQUALS
+ 'NTG'    0.8   1 30  1 30  1 1 /
+ 'PORO'   0.24  1 30  1 30  1 1 /
+ 'PERMX'  850 1 30  1 30  1 1 /
+ 'PERMY'  850 1 30  1 30  1 1 /
+ 'PERMZ'  85.0  1 30  1 30  1 1 /
+ 'NTG'    0.85   1 30  1 30  2 2 /
+ 'PORO'   0.22  1 30  1 30  2 2 /
+ 'PERMX'  620 1 30  1 30  2 2 /
+ 'PERMY'  620 1 30  1 30  2 2 /
+ 'PERMZ'  62.0  1 30  1 30  2 2 /
+ 'NTG'    0.75   1 30  1 30  3 3 /
+ 'PORO'   0.2  1 30  1 30  3 3 /
+ 'PERMX'  410 1 30  1 30  3 3 /
+ 'PERMY'  410 1 30  1 30  3 3 /
+ 'PERMZ'  41.0  1 30  1 30  3 3 /
+ 'NTG'    0.9   1 30  1 30  4 4 /
+ 'PORO'   0.23  1 30  1 30  4 4 /
+ 'PERMX'  780 1 30  1 30  4 4 /
+ 'PERMY'  780 1 30  1 30  4 4 /
+ 'PERMZ'  78.0  1 30  1 30  4 4 /
+ 'NTG'    0.78   1 30  1 30  5 5 /
+ 'PORO'   0.19  1 30  1 30  5 5 /
+ 'PERMX'  310 1 30  1 30  5 5 /
+ 'PERMY'  310 1 30  1 30  5 5 /
+ 'PERMZ'  31.0  1 30  1 30  5 5 /
+/
+
+-- Mild areal heterogeneity multiplier so the sector isn't perfectly
+-- layer-cake (keeps the model usable for gas-storage conformance /
+-- sweep-efficiency work in Phase 2)
+MULTIPLY
+ 'PERMX'  1.15   1 10  1 30  1 5 /
+ 'PERMX'  0.85  21 30  1 30  1 5 /
+ 'PERMY'  1.15   1 10  1 30  1 5 /
+ 'PERMY'  0.85  21 30  1 30  1 5 /
+/
+
+-- --- Analytic edge aquifer (Carter-Tracy), parameters taken directly
+-- --- from the data source's "AQUIFER MODEL" block: thickness=77 ft,
+-- --- reservoir radius=16137.2 ft, outer/inner radius ratio=15,
+-- --- encroachment angle=56 deg, aquifer permeability=566 mD.
+AQUCT
+-- AqID  Depth  Pi     Perm  Poro  Ctotal    Rres     Thick  Angle  PVTNUM  Tab
+   1     8700   2751.0 566   0.20  6.9E-06   16137.2  77.0   56.0   1       1*  /
+/
+
+AQUANCON
+ 1   1  1   1 30   1  5  'I-'  /
+/
+
+ECHO
+
+RPTGRID
+ 'PORO'  'PERMX'  'PERMY'  'PERMZ'  'NTG'  'TOPS'  /
+
+-- =================================================================
+PROPS
+-- =================================================================
+NOECHO
+
+-- --- Oil PVT: Standing (1947) Rs/Bo + Beggs-Robinson (1975) viscosity,
+-- --- correlations calibrated (single multiplicative factor per
+-- --- property) to match the EK6 anchor point exactly at Pb:
+-- --- Pb=2751 psia, Rsb=818 scf/STB, Bob=1.440 rb/STB, muob=0.340 cp,
+-- --- API=41.9, gas SG=0.68, T=179 degF. See Dataset Documentation
+-- --- Table 2 for the full correlation form and calibration factors.
+PVTO
+-- Rs(Mscf/stb as scf/stb)   Pbub(psia)   Bo(rb/stb)   Vis(cp)
+   22.41     114.70    1.0663   1.0817
+             414.70    1.0249   1.3117
+             714.70    0.9835   1.4233 /
+   42.86     214.70    1.0745   0.9889
+             514.70    1.0507   1.1275
+             814.70    1.0268   1.2079 /
+   65.20     314.70    1.0835   0.9090
+             614.70    1.0660   1.0050
+             914.70    1.0484   1.0667 /
+   88.94     414.70    1.0932   0.8409
+             714.70    1.0789   0.9124
+            1014.70    1.0645   0.9617 /
+  113.81     514.70    1.1036   0.7827
+             814.70    1.0911   0.8385
+            1114.70    1.0786   0.8789 /
+  139.66     614.70    1.1145   0.7327
+             914.70    1.1033   0.7777
+            1214.70    1.0920   0.8115 /
+  166.34     714.70    1.1260   0.6893
+            1014.70    1.1155   0.7265
+            1314.70    1.1051   0.7553 /
+  193.78     814.70    1.1379   0.6513
+            1114.70    1.1281   0.6827
+            1414.70    1.1183   0.7076 /
+  221.90     914.70    1.1502   0.6179
+            1214.70    1.1409   0.6448
+            1514.70    1.1315   0.6665 /
+  250.64    1014.70    1.1630   0.5882
+            1314.70    1.1540   0.6115
+            1614.70    1.1450   0.6307 /
+  279.94    1114.70    1.1762   0.5617
+            1414.70    1.1674   0.5821
+            1714.70    1.1587   0.5992 /
+  309.79    1214.70    1.1898   0.5378
+            1514.70    1.1812   0.5560
+            1814.70    1.1726   0.5712 /
+  340.12    1314.70    1.2038   0.5163
+            1614.70    1.1953   0.5324
+            1914.70    1.1869   0.5462 /
+  370.93    1414.70    1.2181   0.4967
+            1714.70    1.2098   0.5112
+            2014.70    1.2014   0.5237 /
+  402.18    1514.70    1.2328   0.4788
+            1814.70    1.2245   0.4919
+            2114.70    1.2163   0.5033 /
+  433.84    1614.70    1.2478   0.4623
+            1914.70    1.2396   0.4743
+            2214.70    1.2314   0.4848 /
+  465.91    1714.70    1.2631   0.4472
+            2014.70    1.2550   0.4582
+            2314.70    1.2468   0.4678 /
+  498.35    1814.70    1.2788   0.4332
+            2114.70    1.2707   0.4433
+            2414.70    1.2625   0.4522 /
+  531.16    1914.70    1.2948   0.4203
+            2214.70    1.2866   0.4296
+            2514.70    1.2785   0.4378 /
+  564.31    2014.70    1.3111   0.4082
+            2314.70    1.3029   0.4168
+            2614.70    1.2947   0.4245 /
+  597.80    2114.70    1.3277   0.3970
+            2414.70    1.3195   0.4050
+            2714.70    1.3113   0.4122 /
+  631.61    2214.70    1.3446   0.3865
+            2514.70    1.3364   0.3939
+            2814.70    1.3281   0.4007 /
+  665.74    2314.70    1.3618   0.3767
+            2614.70    1.3535   0.3836
+            2914.70    1.3452   0.3899 /
+  700.16    2414.70    1.3793   0.3674
+            2714.70    1.3709   0.3739
+            3014.70    1.3626   0.3798 /
+  734.87    2514.70    1.3970   0.3587
+            2814.70    1.3886   0.3648
+            3114.70    1.3802   0.3704 /
+  769.87    2614.70    1.4150   0.3505
+            2914.70    1.4065   0.3562
+            3214.70    1.3981   0.3615 /
+  805.13    2714.70    1.4333   0.3427
+            3014.70    1.4248   0.3481
+            3314.70    1.4162   0.3531 /
+  818.00    2751.00    1.4400   0.3400
+            3051.00    1.4314   0.3453
+            3351.00    1.4228   0.3502 /
+/
+
+-- --- Gas PVT: Sutton (1985) pseudocriticals + Hall-Yarborough
+-- --- z-factor + Lee-Gonzalez-Eakin (1966) viscosity, gas SG=0.68,
+-- --- T=179 degF, CO2=0.1%, N2=0.03%, H2S=0.
+PVDG
+-- Pressure(psia)  Bg(rb/Mscf)   Vis(cp)
+   114.70     27.7447    0.01300
+   414.70      7.4642    0.01329
+   714.70      4.2197    0.01370
+  1014.70      2.9025    0.01422
+  1314.70      2.1947    0.01484
+  1614.70      1.7578    0.01557
+  1914.70      1.4653    0.01640
+  2214.70      1.2589    0.01730
+  2514.70      1.1079    0.01828
+  2751.00      1.0160    0.01908
+  3200.00      0.8860    0.02064
+  3700.00      0.7862    0.02240
+  4200.00      0.7157    0.02413
+  4700.00      0.6637    0.02580
+  5200.00      0.6239    0.02740
+/
+
+-- --- Water PVT: representative Niger Delta formation-water (NaCl
+-- --- brine, ~20,000 ppm), reference pressure = initial reservoir
+-- --- pressure.
+PVTW
+ 2751.0   1.0295   3.3E-06   0.44   0.0 /
+
+-- --- Rock compressibility: value supplied directly in the EK6
+-- --- tank-model source data (3.577E-06 1/psi at 2751 psia).
+ROCK
+ 2751.0   3.577E-06 /
+
+-- --- Surface densities (from API=41.9, gas SG=0.68, fresh/brine water)
+DENSITY
+ 50.92   63.70   0.0520 /
+
+-- --- Water-oil SCAL: Corey model, endpoints/exponents taken directly
+-- --- from the EK6 source's relative-permeability table (Swc=0.13,
+-- --- Sorw=0.12, krw_max=0.78, kro_max=0.80, nw=3.8, no=4.0), Pcow
+-- --- built as a weak Corey-shaped curve typical of high-perm
+-- --- unconsolidated Niger Delta sand.
+SWOF
+-- Sw       Krw       Krow       Pcow(psi)
+0.1300   0.00000   0.80000   5.000
+0.1800   0.00003   0.60707   4.356
+0.2300   0.00037   0.45133   3.756
+0.2800   0.00172   0.32768   3.200
+0.3300   0.00514   0.23136   2.689
+0.3800   0.01200   0.15802   2.222
+0.4300   0.02398   0.10368   1.800
+0.4800   0.04308   0.06473   1.422
+0.5300   0.07156   0.03794   1.089
+0.5800   0.11196   0.02048   0.800
+0.6300   0.16709   0.00988   0.556
+0.6800   0.24002   0.00405   0.356
+0.7300   0.33407   0.00128   0.200
+0.7800   0.45283   0.00025   0.089
+0.8300   0.60011   0.00002   0.022
+0.8800   0.78000   0.00000   0.000
+/
+
+-- --- Gas-oil SCAL: Corey model, Sgc/krg_max/ng taken directly from
+-- --- the EK6 source table (0.04 / 0.77 / 3.0); Sorg=0.15 and
+-- --- oil-in-gas exponent=2.0 assumed from literature range for
+-- --- unconsolidated Niger Delta sandstone (see documentation).
+SGOF
+-- Sg       Krg       Krog       Pcog(psi)
+0.0000   0.00000   0.80000   0.000
+0.0480   0.00000   0.78129   0.024
+0.0960   0.00043   0.67366   0.165
+0.1440   0.00275   0.57401   0.306
+0.1920   0.00860   0.48233   0.447
+0.2400   0.01959   0.39862   0.588
+0.2880   0.03735   0.32288   0.729
+0.3360   0.06351   0.25511   0.871
+0.3840   0.09969   0.19532   1.012
+0.4320   0.14751   0.14350   1.153
+0.4800   0.20860   0.09965   1.294
+0.5280   0.28459   0.06378   1.435
+0.5760   0.37710   0.03588   1.576
+0.6240   0.48776   0.01594   1.718
+0.6720   0.61818   0.00399   1.859
+0.7200   0.77000   0.00000   2.000
+/
+
+ECHO
+
+-- =================================================================
+REGIONS
+-- =================================================================
+SATNUM
+ 4500*1 /
+PVTNUM
+ 4500*1 /
+EQLNUM
+ 4500*1 /
+
+-- =================================================================
+SOLUTION
+-- =================================================================
+-- Reservoir originally at bubble point (Pi = Pb = 2751 psia) --
+-- consistent with the EK6 source ("Initial Pressure" = "Bubble
+-- Point" = 2751 psia): a fully saturated reservoir at discovery,
+-- no initial free gas cap.
+
+EQUIL
+-- Datum   Pdatum   WOC     Pcow@WOC  GOC    Pcog@GOC  RsFlag GasFlag  N
+   8400    2700.0   8700.0  0.0       8200.0 0.0       1      0        0  /
+
+RSVD
+ 8200  818.0
+ 8700  818.0 /
+
+RPTSOL
+ 'PRESSURE'  'SOIL'  'SWAT'  'SGAS'  'RS'  'RESTART=2' /
+
+-- =================================================================
+SUMMARY
+-- =================================================================
+FOPR
+FGPR
+FWPR
+FWCT
+FGOR
+FPR
+FOPT
+FGPT
+FWPT
+FAQR
+FAQT
+WOPR
+ /
+WWCT
+ /
+WBHP
+ /
+WGOR
+ /
+ALL
+
+-- =================================================================
+SCHEDULE
+-- =================================================================
+RPTSCHED
+ 'PRES'  'SWAT'  'SGAS'  'RS'  'WELLS'  /
+
+RPTRST
+ 'BASIC=2' /
+
+WELSPECS
+'AFIESERE'  'FLD'  6  6  8400  'OIL'  /
+'ERIEMU'  'FLD'  6  24  8400  'OIL'  /
+'EVWRENI'  'FLD'  24  6  8400  'OIL'  /
+'OWEH'  'FLD'  24  24  8400  'OIL'  /
+'OLOMORO'  'FLD'  15  10  8400  'OIL'  /
+'KOKORI'  'FLD'  10  15  8400  'OIL'  /
+'ORONI'  'FLD'  20  20  8400  'OIL'  /
+'UZERE'  'FLD'  15  25  8400  'OIL'  /
+/
+
+COMPDAT
+'AFIESERE'  6  6  1  2  'OPEN'  1*  1*  0.30  /
+'ERIEMU'  6  24  2  3  'OPEN'  1*  1*  0.30  /
+'EVWRENI'  24  6  1  3  'OPEN'  1*  1*  0.30  /
+'OWEH'  24  24  3  4  'OPEN'  1*  1*  0.30  /
+'OLOMORO'  15  10  2  4  'OPEN'  1*  1*  0.30  /
+'KOKORI'  10  15  1  5  'OPEN'  1*  1*  0.30  /
+'ORONI'  20  20  4  5  'OPEN'  1*  1*  0.30  /
+'UZERE'  15  25  3  5  'OPEN'  1*  1*  0.30  /
+/
+
+-- The first DATES entry used to duplicate START's time (1 Jan 1976)
+-- exactly, which OPM rejects: report steps must be strictly later
+-- than the previous one. Since this was the very first schedule
+-- action anyway, WCONPROD now simply applies at START directly -
+-- same effective date, no DATES step needed for it.
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  55.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  25.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  40.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  17.5  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  22.5  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  45.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  15.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  30.0  4*  500 /
+/
+
+DATES
+ 01 JAN 1978 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  330.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  150.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  240.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  105.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  135.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  270.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  90.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  180.0  4*  500 /
+/
+
+DATES
+ 01 JAN 1980 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  770.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  350.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  560.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  245.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  315.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  630.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  210.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  420.0  4*  500 /
+/
+
+DATES
+ 01 JAN 1985 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  1034.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  470.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  752.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  329.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  423.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  846.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  282.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  564.0  4*  500 /
+/
+
+DATES
+ 01 JAN 1990 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  858.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  390.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  624.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  273.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  351.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  702.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  234.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  468.0  4*  500 /
+/
+
+DATES
+ 01 JAN 1995 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  660.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  300.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  480.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  210.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  270.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  540.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  180.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  360.0  4*  500 /
+/
+
+DATES
+ 01 JAN 2000 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  528.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  240.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  384.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  168.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  216.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  432.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  144.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  288.0  4*  500 /
+/
+
+DATES
+ 01 JAN 2005 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  440.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  200.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  320.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  140.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  180.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  360.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  120.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  240.0  4*  500 /
+/
+
+DATES
+ 01 JAN 2010 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  374.0  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  170.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  272.0  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  119.0  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  153.0  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  306.0  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  102.0  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  204.0  4*  500 /
+/
+
+DATES
+ 01 JAN 2015 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  314.6  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  143.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  228.8  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  100.1  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  128.7  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  257.4  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  85.8  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  171.6  4*  500 /
+/
+
+DATES
+ 01 JAN 2020 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  272.8  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  124.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  198.4  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  86.8  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  111.6  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  223.2  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  74.4  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  148.8  4*  500 /
+/
+
+DATES
+ 01 JAN 2025 /
+/
+
+WCONPROD
+'AFIESERE'  'OPEN'  'ORAT'  239.8  4*  500 /
+'ERIEMU'  'OPEN'  'ORAT'  109.0  4*  500 /
+'EVWRENI'  'OPEN'  'ORAT'  174.4  4*  500 /
+'OWEH'  'OPEN'  'ORAT'  76.3  4*  500 /
+'OLOMORO'  'OPEN'  'ORAT'  98.1  4*  500 /
+'KOKORI'  'OPEN'  'ORAT'  196.2  4*  500 /
+'ORONI'  'OPEN'  'ORAT'  65.4  4*  500 /
+'UZERE'  'OPEN'  'ORAT'  130.8  4*  500 /
+/
+
+DATES
+ 01 JAN 2026 /
+/
+
+-- ---------------------------------------------------------------
+-- End of history-replication period (matches production workbook
+-- through 2025). From here the N/AGCSU Phase-2 team designs the
+-- cyclic gas injection-withdrawal (storage) and gas-flood EOR
+-- schedule per the Execution Methodology, Phase 2, Step 4.
+-- INJ-1 is pre-wired below (shut) as the storage/EOR injector.
+-- ---------------------------------------------------------------
+WELSPECS
+ 'INJ-1'  'FLD'  15  15  8400  'GAS'  /
+/
+
+COMPDAT
+ 'INJ-1'  15  15  1  2  'SHUT'  1*  1*  0.30  /
+/
+
+-- Placeholder control record: RATE mode needs a real target surface
+-- rate (item 5), but it was left defaulted (1*) since Phase 2's
+-- injection schedule isn't designed yet - RATE with no rate is what
+-- OPM rejected. Switched to BHP control since a BHP limit (4500) was
+-- already given and the well is STOP anyway; swap this to RATE with
+-- an actual target rate once the Phase 2 design sets one.
+WCONINJE
+ 'INJ-1'  'GAS'  'STOP'  'BHP'  1*  1*  4500 /
+/
+
+
+END
