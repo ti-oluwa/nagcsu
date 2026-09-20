@@ -29,7 +29,7 @@ from nagcsu import config as config_module
     help="Name or path of the OPM Flow executable.",
 )
 @click.pass_context
-def init_cmd(ctx: click.Context, deck_path: str, history_path: str, flow_executable: str) -> None:
+def init(ctx: click.Context, deck_path: str, history_path: str, flow_executable: str) -> None:
     """Create a `nagcsu.yaml` project config in the current directory.
 
     Safe to run from the repository root with the defaults, which point

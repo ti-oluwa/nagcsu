@@ -158,11 +158,9 @@ def parse(prt_path: pathlib.Path | str) -> PrtReport:
         well = match["well"]
         unconverged_well_counts[well] = unconverged_well_counts.get(well, 0) + 1
 
-    completed_report_steps = [int(match["step"]) for match in REPORT_STEP_PATTERN.finditer(text)]
-    last_simulated_date = None
     step_matches = list(REPORT_STEP_PATTERN.finditer(text))
-    if step_matches:
-        last_simulated_date = step_matches[-1]["date"]
+    completed_report_steps = [int(match["step"]) for match in step_matches]
+    last_simulated_date = step_matches[-1]["date"] if step_matches else None
 
     summary_match = ERROR_SUMMARY_PATTERN.search(text)
     warnings = int(summary_match["warnings"]) if summary_match else len(unconverged_well_counts)

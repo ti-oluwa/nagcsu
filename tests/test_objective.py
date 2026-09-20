@@ -7,7 +7,7 @@ from nagcsu import objective
 from nagcsu.exceptions import HistoryAlignmentError
 
 
-def _frame(pressure, watercut, gor):
+def get_frame(pressure, watercut, gor):
     return pandas.DataFrame({
         "DATE": pandas.date_range("2020-01-01", periods=len(pressure), freq="YS"),
         "FPR": pressure,
@@ -34,8 +34,8 @@ def test_nrmse_falls_back_to_raw_rmse_for_zero_range_observed() -> None:
 
 
 def test_score_combines_weighted_nrmse() -> None:
-    simulated = _frame([2710, 2660, 2610, 2560], [0.10, 0.15, 0.20, 0.25], [820, 830, 840, 850])
-    observed = _frame([2700, 2650, 2600, 2550], [0.10, 0.15, 0.20, 0.25], [820, 830, 840, 850])
+    simulated = get_frame([2710, 2660, 2610, 2560], [0.10, 0.15, 0.20, 0.25], [820, 830, 840, 850])
+    observed = get_frame([2700, 2650, 2600, 2550], [0.10, 0.15, 0.20, 0.25], [820, 830, 840, 850])
 
     result = objective.score(
         simulated, observed, weights={"pressure": 0.5, "watercut": 0.35, "gor": 0.15}
@@ -49,8 +49,8 @@ def test_score_combines_weighted_nrmse() -> None:
 
 
 def test_score_raises_on_no_overlapping_dates() -> None:
-    simulated = _frame([2700], [0.1], [820])
-    observed = _frame([2700], [0.1], [820])
+    simulated = get_frame([2700], [0.1], [820])
+    observed = get_frame([2700], [0.1], [820])
     observed["DATE"] = pandas.to_datetime(["2099-01-01"])
 
     with pytest.raises(HistoryAlignmentError):
@@ -60,8 +60,8 @@ def test_score_raises_on_no_overlapping_dates() -> None:
 
 
 def test_score_raises_on_missing_column() -> None:
-    simulated = _frame([2700, 2650], [0.1, 0.15], [820, 830]).drop(columns=["FGOR"])
-    observed = _frame([2700, 2650], [0.1, 0.15], [820, 830])
+    simulated = get_frame([2700, 2650], [0.1, 0.15], [820, 830]).drop(columns=["FGOR"])
+    observed = get_frame([2700, 2650], [0.1, 0.15], [820, 830])
 
     with pytest.raises(HistoryAlignmentError):
         objective.score(

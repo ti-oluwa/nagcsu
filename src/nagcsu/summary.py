@@ -4,7 +4,7 @@ Uses res2df rather than reading `resfo`'s raw keyword/array pairs
 directly, since `res2df.summary.df` already does the report-step to
 tidy-DataFrame work Stage B.1 of the Execution Plan describes doing by
 hand. `resfo` is still useful directly for a quick existence/shape check
-without paying res2df's parsing cost; see :func:`peek_vectors`.
+without paying res2df's parsing cost; see `peek_vectors`.
 """
 
 import pathlib
@@ -23,7 +23,7 @@ def load_summary(
 
     :param case_basename: Path to the run's output files, without
         extension, for example the `case_basename` on a
-        :class:`nagcsu.simulate.RunResult`.
+        `nagcsu.simulate.RunResult`.
     :param wells: Well names to also pull `WWCT:<well>` and `WGOR:<well>`
         for, in case a caller wants a per-well breakdown alongside the
         field totals. The returned frame always has the field-total
@@ -50,7 +50,7 @@ def peek_vectors(case_basename: pathlib.Path | str) -> list[str]:
     Reads only the `.SMSPEC` header via `resfo`, without decoding the
     full `.UNSMRY` time series, so this is safe to call just to check
     whether a run produced the vectors a caller needs before paying for
-    a full :func:`load_summary`.
+    a full `load_summary`.
     """
     case_basename = pathlib.Path(case_basename)
     smspec_path = case_basename.with_suffix(".SMSPEC")

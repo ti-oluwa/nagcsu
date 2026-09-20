@@ -4,15 +4,15 @@ import click
 
 from nagcsu import constants, ledger, parameters, pipeline
 from nagcsu.algorithms import sensitivity
-from nagcsu.cli import _context
+from nagcsu.cli import context
 
 
 @click.group(name="sensitivity")
-def sensitivity_cmd() -> None:
+def sensitivity_() -> None:
     """Local one-at-a-time sensitivity: which parameters move J the most."""
 
 
-@sensitivity_cmd.command(name="run")
+@sensitivity_.command(name="run")
 @click.option(
     "--group",
     "group_name",
@@ -26,7 +26,7 @@ def sensitivity_cmd() -> None:
     help="Fraction of each parameter's bound range to perturb by, each direction.",
 )
 @click.pass_context
-def run_cmd(ctx: click.Context, group_name: str | None, perturbation_fraction: float) -> None:
+def run(ctx: click.Context, group_name: str | None, perturbation_fraction: float) -> None:
     """Perturb each parameter up and down and rank them by how much J moved.
 
     Useful both on its own, to see where tuning effort is likely to
@@ -38,7 +38,7 @@ def run_cmd(ctx: click.Context, group_name: str | None, perturbation_fraction: f
             f"Unknown group {group_name!r}. Valid groups: {list(constants.TUNING_PRIORITY_ORDER)}"
         )
 
-    project_config, base_deck = _context.load(ctx)
+    project_config, base_deck = context.load(ctx)
     specs = (
         parameters.parameters_in_group(group_name)
         if group_name
@@ -47,28 +47,23 @@ def run_cmd(ctx: click.Context, group_name: str | None, perturbation_fraction: f
     bounds_by_parameter = {spec.name: spec.bounds for spec in specs}
 
     ledger_path = project_config.resolved_path(project_config.ledger_path)
-    evaluate = pipeline.make_evaluate(project_config, base_deck, run_id_prefix="sensitivity")
 
-    results, trials = sensitivity.run(
+    def on_outcome(outcome: pipeline.RunOutcome) -> None:
+        record = pipeline.to_run_record(
+            outcome, group=group_name, strategy="sensitivity", note="sensitivity probe"
+        )
+        ledger.append(ledger_path, record)
+
+    evaluate = pipeline.make_evaluate(
+        project_config, base_deck, run_id_prefix="sensitivity", on_outcome=on_outcome
+    )
+
+    results, _trials = sensitivity.run(
         parameters.default_state(),
         bounds_by_parameter,
         evaluate,
         perturbation_fraction=perturbation_fraction,
     )
-
-    for trial_index, trial in enumerate(trials):
-        record = ledger.RunRecord(
-            run_id=f"sensitivity_{trial_index:05d}",
-            created_at=ledger.timestamp_now(),
-            parameter_state=trial.state,
-            group=group_name,
-            strategy="sensitivity",
-            j=trial.j,
-            vector_nrmse=None,
-            prt_is_clean=None,
-            note="sensitivity probe",
-        )
-        ledger.append(ledger_path, record)
 
     click.echo(f"Base J = {results[0].base_j:.4f}\n" if results else "No parameters to test.\n")
     click.echo(f"{'Parameter':<40}{'J at low':>12}{'J at high':>12}{'Swing':>12}")

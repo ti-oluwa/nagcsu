@@ -52,9 +52,9 @@ def search(
     """Tune `groups_in_order` one at a time until `target_j` is reached.
 
     :param base_state: Starting parameter state, normally
-        :func:`nagcsu.parameters.default_state`.
+        `nagcsu.parameters.default_state`.
     :param groups_in_order: Tuning priority order, normally
-        :data:`nagcsu.constants.TUNING_PRIORITY_ORDER`.
+        `nagcsu.constants.TUNING_PRIORITY_ORDER`.
     :param bounds_by_group: `{parameter_name: (low, high)}` for every
         parameter in each group, keyed by group name.
     :param target_j: Stop as soon as the best J found is at or below this.

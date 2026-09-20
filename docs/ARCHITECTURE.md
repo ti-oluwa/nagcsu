@@ -116,7 +116,7 @@ parameter, each tagged with the tuning priority group it belongs to
 | `permeability_multiplier` | 2 | areal PERMX/PERMY contrast (MULTIPLY) |
 | `sgof_shape` | 3 | Sorg, oil-in-gas Corey exponent (literature assumptions) |
 | `sgof_endpoints` | 4 | Sgc, krg_max, gas Corey exponent (anchor-derived, touch last) |
-| `swof_endpoints` | 5 | krw_max, Sorw, water Corey exponent (anchor-derived, touch last) |
+| `swof_endpoints` | 5 | krw_max, Sorw, water and oil Corey exponents (anchor-derived, touch last) |
 | `rock_and_porosity` | 6 | rock compressibility, uniform porosity multiplier |
 
 The plan's Stage D.1 table lists five groups; this registry splits SGOF
@@ -185,6 +185,69 @@ auto` instead writes:
   its resolved value. This is what a future refactor into `INCLUDE`
   files (splitting the deck the way Stage 3.2 originally envisioned)
   would read its per-parameter values from.
+
+## Bugs found and fixed after the first build
+
+A code-review pass after the initial build turned up a few real
+correctness issues worth recording, since the symptoms would only have
+shown up during an actual multi-trial tuning session, not from reading
+any single function in isolation:
+
+- **A failed simulation used to crash the whole search.**
+  `nagcsu.simulate.run` correctly raises `SimulationError` when OPM Flow
+  exits nonzero with no summary output, but `nagcsu.pipeline.execute_run`
+  did not catch it, so the first parameter combination that made OPM
+  Flow crash outright (not uncommon for auto-tune's coordinate descent,
+  which explores the full bounds of every parameter) would kill a
+  `match auto`, `match sweep`, `match random` or `sensitivity run`
+  session partway through, discarding every trial already run. This
+  directly contradicted `pipeline.make_evaluate`'s own docstring, which
+  already promised graceful `float("inf")` handling for "a state whose
+  run produced no score." `execute_run` now catches `SimulationError`
+  and returns a `RunOutcome` with `simulation_error` set instead of
+  raising; every CLI command surfaces that message and logs it to the
+  ledger rather than aborting. `match sweep/random/auto` also now raise
+  a clear error up front if literally every trial failed (a flat
+  `float("inf")` objective is never a usable calibration result), rather
+  than quietly writing out a meaningless "best" state.
+- **`nagcsu sensitivity run` was reconstructing run IDs by hand instead
+  of using the ones actually assigned.** It built each ledger record
+  from `enumerate(trials)` after the fact, assuming that loop's index
+  would always line up with the counter inside
+  `pipeline.make_evaluate`'s closure. The two happened to stay in sync
+  for the exact call pattern `sensitivity.run` uses, but the records it
+  produced were missing `vector_nrmse`, `prt_is_clean`, and any
+  simulation failure entirely, unlike every other `match` subcommand.
+  It now wires `on_outcome` the same way `match sweep/random/auto` do,
+  logging the real `RunOutcome` for each trial instead of a
+  reconstruction of it.
+- **`swof.oil_exponent` was hardcoded to `4.0`** instead of exposed as a
+  tunable parameter, even though the equivalent SGOF parameter
+  (`sgof.oil_exponent`) is tunable and both are literally the same
+  Corey-model role in their respective tables. Stage D.1's table only
+  names Krw_max/Sorw/nw for the SWOF group, which is why it was left
+  out originally, but permanently fixing a real relative-permeability
+  shape parameter meant `match auto`'s `swof_endpoints` group could
+  never fully close a water-cut gap that this exponent, not the other
+  three, was actually responsible for. It is now `swof.oil_exponent`,
+  in the same `swof_endpoints` group, default `4.0` (matching the
+  anchor) so nothing about the shipped deck's behavior changes until it
+  is actually tuned.
+- **`history.load_observed_history` did not normalize its `DATE` column**
+  the way `summary.load_summary` normalizes its own, even though
+  `objective.score` merges the two frames on an exact date match. A
+  workbook whose dates come back from `pandas.read_excel` with a
+  different time-of-day component, or as strings rather than a parsed
+  datetime, could merge to nothing (an empty, `HistoryAlignmentError`
+  result) or silently line up incorrectly. Both frames now go through
+  the same `pandas.to_datetime(...).dt.normalize()` step.
+- **`simulate.run`'s `extra_args` parameter had the same
+  `list[str] = ()` type/default mismatch already fixed in
+  `summary.load_summary` during the previous round**, missed the first
+  time because ruff's mutable-default check (`B006`) only flags a
+  literal mutable default, not a type/default mismatch with an
+  immutable one; nothing in the lint config catches this class of bug,
+  only reading the signature against its own type hint does.
 
 ## Known gaps, worth knowing before relying on this
 

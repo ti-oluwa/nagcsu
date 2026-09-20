@@ -2,7 +2,7 @@
 
 The UGH-1 deck is a single monolithic file rather than a base deck plus
 `INCLUDE` files, so every patch here operates directly on the deck text
-and returns a new :class:`Deck`. Every patch is refused rather than
+and returns a new `Deck`. Every patch is refused rather than
 guessed at if its target pattern does not match exactly once, since a
 silent wrong-occurrence match (the exact failure mode Stage D.5 of the
 Execution Plan warns about for hand-edited `INCLUDE` files) is far worse
@@ -87,7 +87,7 @@ class Deck:
     ) -> "Deck":
         """Return a new `Deck` with every match of `pattern` rewritten by `transform`.
 
-        Unlike :meth:`replace_once`, this supports patching several
+        Unlike `replace_once`, this supports patching several
         occurrences at once (for example, every layer's `PORO` value in
         an `EQUALS` block), but only after confirming the match count is
         exactly what the caller expects.
@@ -131,7 +131,7 @@ NUMBER_PATTERN: typing.Final[str] = r"[-+]?\d*\.?\d+(?:[eEdD][-+]?\d+)?"
 """Regex fragment matching an OPM-style numeric literal (plain decimal
 or exponential notation using e, E, d or D). Exported so other modules
 that build their own deck patch patterns, such as
-:mod:`nagcsu.parameters`, do not need to redefine it.
+`nagcsu.parameters`, do not need to redefine it.
 """
 
 
@@ -143,7 +143,7 @@ def read_relperm_table(deck: Deck, keyword: str) -> list[tuple[float, float, flo
         data row, in file order.
     :raises DeckPatchError: if the keyword's block cannot be found.
     """
-    block = _find_table_block(deck, keyword)
+    block = find_table_block(deck, keyword)
     rows: list[tuple[float, float, float, float]] = []
     row_pattern = re.compile(
         rf"^\s*({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s*$"
@@ -161,13 +161,13 @@ def patch_relperm_table(deck: Deck, keyword: str, transform: RowTransform) -> De
     :param keyword: "SWOF" or "SGOF".
     :param transform: Called with the table's current rows, must return
         the replacement rows (same length and order). Typically built
-        from :mod:`nagcsu.corey` by keeping the saturation and
+        from `nagcsu.corey` by keeping the saturation and
         capillary-pressure columns and recomputing the two relative
         permeability columns.
     :raises DeckPatchError: if the keyword's block cannot be found, or
         if `transform` returns a different number of rows than it was given.
     """
-    block = _find_table_block(deck, keyword)
+    block = find_table_block(deck, keyword)
     current_rows = read_relperm_table(deck, keyword)
     new_rows = transform(current_rows)
     if len(new_rows) != len(current_rows):
@@ -175,13 +175,13 @@ def patch_relperm_table(deck: Deck, keyword: str, transform: RowTransform) -> De
             f"Row transform for {keyword} returned {len(new_rows)} rows, "
             f"expected {len(current_rows)}"
         )
-    new_body = "\n".join(_format_relperm_row(row) for row in new_rows)
+    new_body = "\n".join(format_relperm_row(row) for row in new_rows)
     new_block_text = f"{block.header}\n{new_body}\n/"
     new_text = deck.text[: block.start] + new_block_text + deck.text[block.end :]
     return dataclasses.replace(deck, text=new_text)
 
 
-def _format_relperm_row(row: tuple[float, float, float, float]) -> str:
+def format_relperm_row(row: tuple[float, float, float, float]) -> str:
     """Format one relative permeability table row in the deck's own style."""
     saturation, kr1, kr2, capillary_pressure = row
     return f"{saturation:.4f}   {kr1:.5f}   {kr2:.5f}   {capillary_pressure:.3f}"
@@ -222,10 +222,10 @@ def transform_within_block(
     expected_count: int | None = None,
     flags: int = 0,
 ) -> "Deck":
-    """Apply :meth:`Deck.transform_each`, restricted to one keyword's block.
+    """Apply `Deck.transform_each`, restricted to one keyword's block.
 
     Scoping the search to `keyword`'s own `(start, end)` span (see
-    :func:`find_block_span`) is what keeps a positional pattern such as
+    `find_block_span`) is what keeps a positional pattern such as
     AQUCT's field list from also matching an unrelated numeric line
     elsewhere in the deck.
     """
@@ -240,7 +240,7 @@ def transform_within_block(
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _TableBlock:
+class TableBlock:
     """Span and content of one `KEYWORD ... /` table block in a deck."""
 
     header: str
@@ -258,7 +258,7 @@ class _TableBlock:
     """Character offset just past the closing `/` of the block."""
 
 
-def _find_table_block(deck: Deck, keyword: str) -> _TableBlock:
+def find_table_block(deck: Deck, keyword: str) -> TableBlock:
     """Locate a `KEYWORD ... /` block and split it into header and body.
 
     :raises DeckPatchError: if `keyword` does not appear exactly once as
@@ -277,4 +277,4 @@ def _find_table_block(deck: Deck, keyword: str) -> _TableBlock:
     )
     header = "\n".join(lines[:first_data_line_index])
     body_lines = lines[first_data_line_index:-1] if len(lines) > 1 else []
-    return _TableBlock(header=header, body_lines=body_lines, start=start, end=end)
+    return TableBlock(header=header, body_lines=body_lines, start=start, end=end)

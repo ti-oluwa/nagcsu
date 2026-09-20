@@ -1,8 +1,9 @@
-"""N/AGCSU Phase 2 history matching and storage scheduling toolkit.
+"""
+N/AGCSU history matching and storage scheduling toolkit.
 
 This package wraps OPM Flow, res2df and resfo into a single command line
-tool (see :mod:`nagcsu.cli`) for the UGH-1 composite sector model history
-match described in the Phase 2 Execution Plan: running the deck, scoring
+tool (see `nagcsu.cli`) for the UGH-1 composite sector model history
+match described in the Execution Plan: running the deck, scoring
 the mismatch against the synthetic production history, searching for a
 calibrated parameter set, and writing out a defensible summary of how that
 parameter set was found.

@@ -5,7 +5,7 @@ as the input `.DATA` file: a run in this project's `Data/` folder shows
 Flow folding the case name to upper case when it differs from the input
 filename's own case ("NigerDelta UGH1 Composite Field.DATA" produced
 "NIGERDELTA UGH1 COMPOSITE FIELD.PRT/.UNSMRY/.SMSPEC"). Rather than
-guess at that transform, :func:`find_case_basename` globs the output
+guess at that transform, `find_case_basename` globs the output
 directory for whatever `.UNSMRY` file actually appeared.
 """
 
@@ -73,13 +73,13 @@ def run(
     output_dir: pathlib.Path | str,
     *,
     flow_executable: str = "flow",
-    extra_args: list[str] = (),
+    extra_args: list[str] | None = None,
     timeout_seconds: float | None = None,
 ) -> RunResult:
     """Run OPM Flow against `deck_path`, writing output to `output_dir`.
 
     Does not raise on a nonzero `flow` exit code by itself; a nonzero
-    exit with no summary output raises :class:`SimulationError` since
+    exit with no summary output raises `SimulationError` since
     there is nothing left to score, but a run that wrote a `.PRT` and
     `.UNSMRY` before failing (for example, a run that could not reach
     its last report step) is returned as a normal `RunResult` so the
@@ -95,7 +95,12 @@ def run(
     started = time.monotonic()
     try:
         completed = subprocess.run(
-            [flow_executable, str(deck_path), f"--output-dir={output_dir}", *extra_args],
+            [
+                flow_executable,
+                str(deck_path),
+                f"--output-dir={output_dir}",
+                *(extra_args or []),
+            ],
             capture_output=True,
             text=True,
             timeout=timeout_seconds,

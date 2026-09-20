@@ -67,3 +67,51 @@ def test_load_observed_history_respects_explicit_column_map(tmp_path) -> None:
     assert result["FPR"].iloc[0] == 2700
     assert result["FWCT"].iloc[0] == pytest.approx(0.12)
     assert result["FGOR"].iloc[0] == pytest.approx(815)
+
+
+def test_load_observed_history_normalizes_string_dates_to_datetime(tmp_path) -> None:
+    # A workbook whose DATE column round-trips through Excel as plain
+    # strings (rather than a native datetime) must still normalize to
+    # midnight Timestamps, since objective.score merges on an exact
+    # date match against summary.load_summary's own normalized DATE.
+    frame = pandas.DataFrame({
+        "DATE": ["2020-01-01", "2021-01-01"],
+        "FPR": [2700, 2650],
+        "WWCT_A": [0.10, 0.20],
+        "WGOR_A": [800, 810],
+    })
+    path = tmp_path / "history.xlsx"
+    frame.to_excel(path, index=False)
+
+    result = history.load_observed_history(path, wells=["A"])
+
+    assert pandas.api.types.is_datetime64_any_dtype(result["DATE"])
+    assert result["DATE"].iloc[0] == pandas.Timestamp("2020-01-01")
+    # Midnight-normalized: no leftover time-of-day component.
+    assert (result["DATE"].dt.time == pandas.Timestamp("2020-01-01").time()).all()
+
+
+def test_load_observed_history_merges_cleanly_with_a_normalized_simulated_frame(tmp_path) -> None:
+    # Regression check for the actual failure mode: an un-normalized
+    # observed DATE column merging to nothing against a normalized
+    # simulated frame, which objective.score would previously surface
+    # only indirectly as a HistoryAlignmentError with no overlapping dates.
+    frame = pandas.DataFrame({
+        "DATE": pandas.to_datetime(["2020-01-01 00:00:01"]),  # one second past midnight
+        "FPR": [2700],
+        "WWCT_A": [0.1],
+        "WGOR_A": [800],
+    })
+    path = tmp_path / "history.xlsx"
+    frame.to_excel(path, index=False)
+
+    observed = history.load_observed_history(path, wells=["A"])
+    simulated = pandas.DataFrame({
+        "DATE": pandas.to_datetime(["2020-01-01"]).normalize(),
+        "FPR": [2705],
+        "FWCT": [0.1],
+        "FGOR": [800],
+    })
+
+    merged = simulated.merge(observed, on="DATE", suffixes=("_sim", "_obs"))
+    assert len(merged) == 1

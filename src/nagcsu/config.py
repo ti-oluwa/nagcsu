@@ -27,7 +27,7 @@ class ObjectiveConfig:
         default_factory=lambda: dict(constants.DEFAULT_OBJECTIVE_WEIGHTS)
     )
     """NRMSE weight per scored vector, keyed by "pressure", "watercut"
-    and "gor". Must sum to 1.0; :meth:`ProjectConfig.validate` checks this.
+    and "gor". Must sum to 1.0; `ProjectConfig.validate` checks this.
     """
 
     target_j: float = constants.DEFAULT_TARGET_J
@@ -54,7 +54,7 @@ class HistoryConfig:
     """Optional explicit mapping from a res2df summary vector name (for
     example "FPR" or "WWCT:AFIESERE") to the workbook's column name for
     that same quantity. Leave unset to use
-    :func:`nagcsu.history.guess_column_map`, which matches the
+    `nagcsu.history.guess_column_map`, which matches the
     DATE,FPR,WWCT_<WELL>,WGOR_<WELL> layout Stage B.2 of the Execution
     Plan builds the workbook in.
     """
@@ -73,7 +73,7 @@ class ProjectConfig:
     """
 
     ledger_path: pathlib.Path = pathlib.Path("runs/ledger.json")
-    """Path to the JSON run ledger (see :mod:`nagcsu.ledger`)."""
+    """Path to the JSON run ledger (see `nagcsu.ledger`)."""
 
     flow_executable: str = "flow"
     """Name or path of the OPM Flow executable to invoke for each run."""
@@ -89,7 +89,7 @@ class ProjectConfig:
 
     root: pathlib.Path = pathlib.Path(".")
     """Directory the config file was loaded from. Relative paths in every
-    other field are resolved against this when :meth:`resolved_path` is
+    other field are resolved against this when `resolved_path` is
     called, so the project can be run from any working directory.
     """
 
@@ -130,7 +130,7 @@ def load(config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> ProjectCo
     override.
 
     :raises FileNotFoundError: if `config_path` does not exist.
-    :raises ValueError: if the loaded config fails :meth:`ProjectConfig.validate`.
+    :raises ValueError: if the loaded config fails `ProjectConfig.validate`.
     """
     config_path = pathlib.Path(config_path)
     if not config_path.exists():
@@ -173,9 +173,12 @@ def load(config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> ProjectCo
 def save(config: ProjectConfig, config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> None:
     """Write `config` out as YAML at `config_path`.
 
-    Path fields are written relative to :attr:`ProjectConfig.root` where
-    possible, so the file stays portable if the project directory is
-    moved or cloned elsewhere.
+    Path fields are written exactly as stored on `config`, not
+    re-relativized against `root`. `load()` keeps every path field
+    relative (only `root` itself becomes absolute), so a config that was
+    only ever loaded and re-saved stays portable; a `ProjectConfig`
+    built by hand with an absolute path in one of these fields will
+    round-trip as that same absolute path.
     """
     config_path = pathlib.Path(config_path)
     payload = {

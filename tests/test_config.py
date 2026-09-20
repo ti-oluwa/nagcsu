@@ -1,5 +1,7 @@
 """Tests for `nagcsu.config`."""
 
+import pathlib
+
 import pytest
 
 from nagcsu import config
@@ -32,7 +34,7 @@ def test_validate_rejects_weights_not_summing_to_one() -> None:
 
 def test_resolved_path_joins_relative_paths_onto_root(tmp_path) -> None:
     project_config = config.ProjectConfig(root=tmp_path)
-    resolved = project_config.resolved_path("Data/deck.DATA")
+    resolved = project_config.resolved_path(pathlib.Path("Data/deck.DATA"))
     assert resolved == (tmp_path / "Data/deck.DATA").resolve()
 
 

@@ -1,7 +1,7 @@
 """A JSON-backed record of every run a project has made.
 
 Every `nagcsu run` and `nagcsu match` invocation appends one
-:class:`RunRecord` here. It is what makes `nagcsu report` and
+`RunRecord` here. It is what makes `nagcsu report` and
 `nagcsu match auto`'s stopping logic possible without re-reading every
 run directory's `.PRT` and summary output on every invocation, and it is
 the "how it was gotten" record a snapshot report is built from.
@@ -31,7 +31,7 @@ class RunRecord:
 
     parameter_state: dict[str, float]
     """Full resolved parameter state used to build this run's deck (see
-    :func:`nagcsu.parameters.resolve_state`), so the deck is
+    `nagcsu.parameters.resolve_state`), so the deck is
     reproducible from this record alone.
     """
 
@@ -61,6 +61,12 @@ class RunRecord:
     note: str
     """Free-text note, for example why a run was made or what changed
     since the previous one in its group.
+    """
+
+    simulation_error: str | None = None
+    """Message from `nagcsu.simulate.run` if the simulation failed to
+    produce any summary output, or `None` otherwise. Defaulted so a
+    ledger file written before this field existed still loads.
     """
 
 
@@ -100,7 +106,7 @@ def best_record(records: list[RunRecord]) -> RunRecord | None:
     scored = [record for record in records if record.j is not None]
     if not scored:
         return None
-    return min(scored, key=lambda record: record.j)
+    return min(scored, key=lambda record: record.j or 0)
 
 
 def timestamp_now() -> str:

@@ -41,7 +41,7 @@ def search(
     if len(combinations) > max_evaluations:
         raise ValueError(
             f"Grid over {parameter_names} has {len(combinations)} combinations, "
-            f"exceeding max_evaluations={max_evaluations}. Narrow the value lists "
+            f"exceeding `max_evaluations={max_evaluations}`. Narrow the value lists "
             f"or raise max_evaluations explicitly."
         )
 

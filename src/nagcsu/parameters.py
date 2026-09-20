@@ -1,9 +1,9 @@
 """Tunable history-matching parameters and how each one patches the deck.
 
 Every function here rebuilds the affected part of the deck from a
-pristine base :class:`~nagcsu.deck.Deck` rather than editing an
+pristine base `nagcsu.deck.Deck` rather than editing an
 already-edited one, so a run's exact deck is always reproducible from
-its logged parameter state alone (see :func:`apply_state`). This
+its logged parameter state alone (see `apply_state`). This
 sidesteps the drift risk of applying the same multiplicative edit twice
 by accident.
 
@@ -45,7 +45,7 @@ class ParameterSpec:
 
     group: str
     """Tuning priority group this parameter belongs to. Must be one of
-    :data:`nagcsu.constants.TUNING_PRIORITY_ORDER`.
+    `nagcsu.constants.TUNING_PRIORITY_ORDER`.
     """
 
     bounds: tuple[float, float]
@@ -161,6 +161,17 @@ PARAMETERS: typing.Final[dict[str, ParameterSpec]] = {
             description="Water Corey exponent nw (SWOF), from the EK6 anchor. Touch only if aquifer/perm/SGOF don't close the water-cut gap.",
         ),
         ParameterSpec(
+            name="swof.oil_exponent",
+            group="swof_endpoints",
+            bounds=(1.0, 6.0),
+            default=4.0,
+            description=(
+                "Water-oil Corey exponent no (SWOF), from the EK6 anchor. Not named in the "
+                "Execution Plan's Stage D.1 table alongside Krw_max/Sorw/nw, but exposed here "
+                "for consistency with sgof.oil_exponent rather than left permanently fixed."
+            ),
+        ),
+        ParameterSpec(
             name="rock.compressibility",
             group="rock_and_porosity",
             bounds=(1.0e-6, 1.0e-5),
@@ -176,9 +187,9 @@ PARAMETERS: typing.Final[dict[str, ParameterSpec]] = {
         ),
     )
 }
-"""Every tunable parameter, keyed by its dotted name. See
-:data:`nagcsu.constants.TUNING_PRIORITY_ORDER` for the groups' tuning
-priority.
+"""
+Every tunable parameter, keyed by its dotted name. See `nagcsu.constants.TUNING_PRIORITY_ORDER` for the 
+groups' tuning priority.
 """
 
 
@@ -326,7 +337,7 @@ def apply_swof_table(deck: Deck, state: dict[str, float]) -> Deck:
             connate_water_saturation=CONNATE_WATER_SATURATION,
             residual_oil_saturation=state["swof.residual_oil_saturation"],
             max_oil_relative_permeability=MAX_OIL_RELATIVE_PERMEABILITY,
-            oil_corey_exponent=4.0,
+            oil_corey_exponent=state["swof.oil_exponent"],
         )
         return list(
             zip(

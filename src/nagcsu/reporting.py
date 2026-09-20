@@ -42,17 +42,24 @@ def render_run_report(
         lines.append(record.note)
 
     lines.append("")
-    lines.append("## Objective")
-    lines.append("")
-    if record.j is None:
-        lines.append("This run was not scored against the observed history.")
-    else:
-        lines.append(f"J = **{record.j:.4f}**")
+    if record.simulation_error:
+        lines.append("## Simulation failed")
         lines.append("")
-        lines.append("| Vector | NRMSE |")
-        lines.append("| --- | --- |")
-        for name, value in (record.vector_nrmse or {}).items():
-            lines.append(f"| {name} | {value:.4f} |")
+        lines.append(
+            f"This run's simulation did not produce usable output: {record.simulation_error}"
+        )
+    else:
+        lines.append("## Objective")
+        lines.append("")
+        if record.j is None:
+            lines.append("This run was not scored against the observed history.")
+        else:
+            lines.append(f"J = **{record.j:.4f}**")
+            lines.append("")
+            lines.append("| Vector | NRMSE |")
+            lines.append("| --- | --- |")
+            for name, value in (record.vector_nrmse or {}).items():
+                lines.append(f"| {name} | {value:.4f} |")
 
     if group_outcomes:
         lines.append("")
@@ -120,7 +127,7 @@ def write_run_report(
     output_path: pathlib.Path | str,
     **kwargs: typing.Any,
 ) -> pathlib.Path:
-    """Render and write a run report; see :func:`render_run_report` for `kwargs`."""
+    """Render and write a run report; see `render_run_report` for `kwargs`."""
     output_path = pathlib.Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(render_run_report(record, **kwargs), encoding="utf-8")

@@ -5,7 +5,7 @@ import pytest
 from nagcsu import ledger
 
 
-def _record(run_id: str, j: float | None) -> ledger.RunRecord:
+def get_run_record(run_id: str, j: float | None) -> ledger.RunRecord:
     return ledger.RunRecord(
         run_id=run_id,
         created_at=ledger.timestamp_now(),
@@ -25,8 +25,8 @@ def test_load_returns_empty_list_for_missing_file(tmp_path) -> None:
 
 def test_append_and_load_round_trip(tmp_path) -> None:
     path = tmp_path / "ledger.json"
-    ledger.append(path, _record("run_0000", j=0.30))
-    ledger.append(path, _record("run_0001", j=0.20))
+    ledger.append(path, get_run_record("run_0000", j=0.30))
+    ledger.append(path, get_run_record("run_0001", j=0.20))
 
     records = ledger.load(path)
     assert [record.run_id for record in records] == ["run_0000", "run_0001"]
@@ -35,14 +35,14 @@ def test_append_and_load_round_trip(tmp_path) -> None:
 
 def test_new_run_id_increments_from_existing_count(tmp_path) -> None:
     assert ledger.new_run_id([]) == "run_0000"
-    assert ledger.new_run_id([_record("run_0000", j=0.1)]) == "run_0001"
+    assert ledger.new_run_id([get_run_record("run_0000", j=0.1)]) == "run_0001"
 
 
 def test_best_record_ignores_unscored_runs(tmp_path) -> None:
     records = [
-        _record("run_0000", j=None),
-        _record("run_0001", j=0.25),
-        _record("run_0002", j=0.10),
+        get_run_record("run_0000", j=None),
+        get_run_record("run_0001", j=0.25),
+        get_run_record("run_0002", j=0.10),
     ]
     best = ledger.best_record(records)
     assert best is not None
@@ -50,4 +50,4 @@ def test_best_record_ignores_unscored_runs(tmp_path) -> None:
 
 
 def test_best_record_returns_none_when_nothing_is_scored() -> None:
-    assert ledger.best_record([_record("run_0000", j=None)]) is None
+    assert ledger.best_record([get_run_record("run_0000", j=None)]) is None

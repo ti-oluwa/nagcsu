@@ -69,6 +69,42 @@ def test_apply_sgof_table_preserves_saturation_and_capillary_pressure(sample_dec
         assert new[3] == original[3]  # Pcog
 
 
+def test_apply_swof_table_preserves_saturation_and_capillary_pressure(sample_deck: Deck) -> None:
+    state = parameters.default_state()
+    state["swof.residual_oil_saturation"] = 0.18
+
+    patched = parameters.apply_state(sample_deck, state)
+    original_rows = read_relperm_table(sample_deck, "SWOF")
+    patched_rows = read_relperm_table(patched, "SWOF")
+
+    for original, new in zip(original_rows, patched_rows, strict=True):
+        assert new[0] == original[0]  # Sw
+        assert new[3] == original[3]  # Pcow
+
+
+def test_swof_oil_exponent_is_tunable_and_actually_changes_krow(sample_deck: Deck) -> None:
+    # swof.oil_exponent used to be hardcoded to 4.0 in apply_swof_table
+    # regardless of state; this pins it as a real, effective parameter.
+    assert "swof.oil_exponent" in parameters.PARAMETERS
+    assert parameters.PARAMETERS["swof.oil_exponent"].group == "swof_endpoints"
+
+    default_deck = parameters.apply_state(sample_deck, parameters.default_state())
+
+    state = parameters.default_state()
+    state["swof.oil_exponent"] = 2.0
+    changed_deck = parameters.apply_state(sample_deck, state)
+
+    default_rows = read_relperm_table(default_deck, "SWOF")
+    changed_rows = read_relperm_table(changed_deck, "SWOF")
+
+    # Krow at an interior Sw row must differ once the exponent changes;
+    # Sw and Pcow (columns 0 and 3) must not.
+    interior_index = 5
+    assert default_rows[interior_index][0] == changed_rows[interior_index][0]
+    assert default_rows[interior_index][3] == changed_rows[interior_index][3]
+    assert default_rows[interior_index][2] != pytest.approx(changed_rows[interior_index][2])
+
+
 def test_apply_rock_and_porosity_scales_every_layer(sample_deck: Deck) -> None:
     state = parameters.default_state()
     state["porosity.multiplier"] = 1.5

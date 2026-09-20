@@ -8,7 +8,7 @@ the repeated `--param NAME=VALUE` option the same way everywhere.
 import click
 
 from nagcsu import config as config_module
-from nagcsu import parameters
+from nagcsu import ledger, parameters
 from nagcsu.deck import Deck
 
 
@@ -55,12 +55,38 @@ def parse_param_options(pairs: tuple[str, ...]) -> dict[str, float]:
     return state
 
 
-def echo_outcome_header(run_id: str, j: float | None, prt_is_clean: bool | None) -> None:
-    """Print a one-line summary of a run's score and health, consistently."""
-    j_text = f"J={j:.4f}" if j is not None else "J=not scored"
+def echo_outcome_header(record: ledger.RunRecord) -> None:
+    """Print a one-line summary of a run's score and health, consistently.
+
+    Prints the simulation-failure message instead, when `record`
+    represents a run whose simulation never produced output, since `j`
+    and `prt_is_clean` are meaningless for that run.
+    """
+    if record.simulation_error:
+        click.echo(f"{record.run_id}: simulation failed: {record.simulation_error}")
+        return
+    j_text = f"J={record.j:.4f}" if record.j is not None else "J=not scored"
     clean_text = (
         "clean"
-        if prt_is_clean
-        else ("NEEDS ATTENTION" if prt_is_clean is not None else "not checked")
+        if record.prt_is_clean
+        else ("NEEDS ATTENTION" if record.prt_is_clean is not None else "not checked")
     )
-    click.echo(f"{run_id}: {j_text}, run health: {clean_text}")
+    click.echo(f"{record.run_id}: {j_text}, run health: {clean_text}")
+
+
+def warn_if_every_trial_failed(best_j: float, *, command: str) -> None:
+    """Raise a clear error if a search's best trial never actually scored.
+
+    A completely flat `float("inf")` objective (every trial's simulation
+    failed) is not a calibration result worth trusting or writing out as
+    a "best" state; this stops `match sweep/random/auto` from silently
+    treating a broken OPM Flow setup as a successful search.
+
+    :raises click.ClickException: if `best_j` is infinite.
+    """
+    if best_j == float("inf"):
+        raise click.ClickException(
+            f"Every trial in this `{command}` run failed to simulate; there is no usable "
+            f"best result. Check `flow_executable` in the project config and that OPM Flow "
+            f"runs on this deck at all (try a plain `nagcsu run` first)."
+        )

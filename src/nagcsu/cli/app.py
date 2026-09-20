@@ -2,7 +2,7 @@
 
 Each subcommand lives in its own module under this package; this module
 only wires them together and resolves the shared `--config` option every
-subcommand reads through :func:`nagcsu.cli._context.load`.
+subcommand reads through `nagcsu.cli._context.load`.
 """
 
 import pathlib
@@ -10,11 +10,11 @@ import pathlib
 import click
 
 from nagcsu import __version__
-from nagcsu.cli.init_cmd import init_cmd
-from nagcsu.cli.match_cmd import match_cmd
-from nagcsu.cli.report_cmd import report_cmd
-from nagcsu.cli.run_cmd import run_cmd
-from nagcsu.cli.sensitivity_cmd import sensitivity_cmd
+from nagcsu.cli.commands.init import init
+from nagcsu.cli.commands.match import match
+from nagcsu.cli.commands.report import report
+from nagcsu.cli.commands.run import run
+from nagcsu.cli.commands.sensitivity import sensitivity_
 
 
 @click.group(name="nagcsu")
@@ -38,11 +38,11 @@ def cli(ctx: click.Context, config_path: str) -> None:
     ctx.obj["config_path"] = pathlib.Path(config_path)
 
 
-cli.add_command(init_cmd)
-cli.add_command(run_cmd)
-cli.add_command(match_cmd)
-cli.add_command(sensitivity_cmd)
-cli.add_command(report_cmd)
+cli.add_command(init)
+cli.add_command(run)
+cli.add_command(match)
+cli.add_command(sensitivity_)
+cli.add_command(report)
 
 
 def main() -> None:
