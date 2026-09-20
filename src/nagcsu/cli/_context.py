@@ -58,5 +58,9 @@ def parse_param_options(pairs: tuple[str, ...]) -> dict[str, float]:
 def echo_outcome_header(run_id: str, j: float | None, prt_is_clean: bool | None) -> None:
     """Print a one-line summary of a run's score and health, consistently."""
     j_text = f"J={j:.4f}" if j is not None else "J=not scored"
-    clean_text = "clean" if prt_is_clean else ("NEEDS ATTENTION" if prt_is_clean is not None else "not checked")
+    clean_text = (
+        "clean"
+        if prt_is_clean
+        else ("NEEDS ATTENTION" if prt_is_clean is not None else "not checked")
+    )
     click.echo(f"{run_id}: {j_text}, run health: {clean_text}")

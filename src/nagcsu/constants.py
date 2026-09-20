@@ -8,7 +8,6 @@ team may want to test a different objective weighting.
 
 import typing
 
-
 PRODUCER_WELLS: typing.Final[tuple[str, ...]] = (
     "AFIESERE",
     "ERIEMU",

@@ -9,9 +9,11 @@ something OPM Flow predicts; a "perfect" rate match proves nothing.
 
 import dataclasses
 
-import numpy
+import numpy as np
+import numpy.typing as npt
 import pandas
 
+from nagcsu.exceptions import HistoryAlignmentError
 
 SCORED_FIELD_VECTORS: dict[str, str] = {
     "pressure": "FPR",
@@ -53,7 +55,10 @@ class ObjectiveResult:
     """Weights actually used for this result, echoed back for the run record."""
 
 
-def nrmse(simulated: numpy.ndarray | pandas.Series, observed: numpy.ndarray | pandas.Series) -> float:
+def nrmse(
+    simulated: npt.NDArray[np.float64] | pandas.Series,
+    observed: npt.NDArray[np.float64] | pandas.Series,
+) -> float:
     """Range-normalized root-mean-square error between two aligned series.
 
     :returns: `RMSE / (observed.max() - observed.min())`. Falls back to
@@ -61,9 +66,9 @@ def nrmse(simulated: numpy.ndarray | pandas.Series, observed: numpy.ndarray | pa
         history), which avoids a division by zero for a degenerate case
         rather than raising.
     """
-    simulated_array = numpy.asarray(simulated, dtype=float)
-    observed_array = numpy.asarray(observed, dtype=float)
-    rmse = numpy.sqrt(numpy.mean((simulated_array - observed_array) ** 2))
+    simulated_array = np.asarray(simulated, dtype=np.float64)
+    observed_array = np.asarray(observed, dtype=np.float64)
+    rmse = np.sqrt(np.mean((simulated_array - observed_array) ** 2))
     span = observed_array.max() - observed_array.min()
     return float(rmse / span) if span > 0 else float(rmse)
 
@@ -87,8 +92,6 @@ def score(
         share no common dates, or if a required column is missing from
         either frame.
     """
-    from nagcsu.exceptions import HistoryAlignmentError
-
     missing_columns = [
         column
         for column in (date_column, *SCORED_FIELD_VECTORS.values())

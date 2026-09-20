@@ -13,7 +13,6 @@ import json
 import pathlib
 import typing
 
-
 LEDGER_SCHEMA_VERSION: typing.Final[int] = 1
 """Bumped whenever `RunRecord`'s shape changes in a way that is not
 backward compatible with an older ledger file on disk.
@@ -91,12 +90,12 @@ def append(ledger_path: pathlib.Path | str, record: RunRecord) -> None:
     ledger_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def new_run_id(existing: typing.Sequence[RunRecord]) -> str:
+def new_run_id(existing: list[RunRecord]) -> str:
     """Return the next `run_NNNN` identifier given a project's existing records."""
     return f"run_{len(existing):04d}"
 
 
-def best_record(records: typing.Sequence[RunRecord]) -> RunRecord | None:
+def best_record(records: list[RunRecord]) -> RunRecord | None:
     """Return the scored record with the lowest `j`, or `None` if none is scored."""
     scored = [record for record in records if record.j is not None]
     if not scored:

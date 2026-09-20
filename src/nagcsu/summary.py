@@ -16,7 +16,9 @@ from res2df import ResdataFiles, summary
 from nagcsu.objective import SCORED_FIELD_VECTORS
 
 
-def load_summary(case_basename: pathlib.Path | str, *, wells: list[str] = ()) -> pandas.DataFrame:
+def load_summary(
+    case_basename: pathlib.Path | str, *, wells: list[str] | None = None
+) -> pandas.DataFrame:
     """Load a run's summary output into a frame ready for `objective.score`.
 
     :param case_basename: Path to the run's output files, without
@@ -31,7 +33,9 @@ def load_summary(case_basename: pathlib.Path | str, *, wells: list[str] = ()) ->
     """
     case_basename = pathlib.Path(case_basename)
     resdata_files = ResdataFiles(str(case_basename))
-    well_vectors = [vector for well in wells for vector in (f"WWCT:{well}", f"WGOR:{well}")]
+    well_vectors = [
+        vector for well in (wells or []) for vector in (f"WWCT:{well}", f"WGOR:{well}")
+    ]
     column_keys = list(SCORED_FIELD_VECTORS.values()) + well_vectors
     raw = summary.df(resdata_files, column_keys=column_keys)
 

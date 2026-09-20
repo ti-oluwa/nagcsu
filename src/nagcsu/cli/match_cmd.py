@@ -3,6 +3,7 @@
 import pathlib
 
 import click
+import yaml
 
 from nagcsu import constants, ledger, parameters, pipeline, reporting
 from nagcsu.algorithms import coordinate_descent, grid, random_search
@@ -31,9 +32,19 @@ def list_parameters() -> None:
 
 
 @match_cmd.command(name="sweep")
-@click.option("--param", "param_name", required=True, help="Parameter to sweep, e.g. aquifer.radius")
-@click.option("--values", required=True, help="Comma-separated values to try, e.g. 12000,14000,16137,18000,20000")
-@click.option("--group-label", default=None, help="Group name recorded on each ledger entry. Defaults to the parameter's own group.")
+@click.option(
+    "--param", "param_name", required=True, help="Parameter to sweep, e.g. aquifer.radius"
+)
+@click.option(
+    "--values",
+    required=True,
+    help="Comma-separated values to try, e.g. 12000,14000,16137,18000,20000",
+)
+@click.option(
+    "--group-label",
+    default=None,
+    help="Group name recorded on each ledger entry. Defaults to the parameter's own group.",
+)
 @click.pass_context
 def sweep_cmd(ctx: click.Context, param_name: str, values: str, group_label: str | None) -> None:
     """Run every value of one parameter, holding all others at their default.
@@ -42,7 +53,9 @@ def sweep_cmd(ctx: click.Context, param_name: str, values: str, group_label: str
     parameter, list the values to try, and get back the J for each.
     """
     if param_name not in parameters.PARAMETERS:
-        raise click.BadParameter(f"Unknown parameter {param_name!r}. Run `nagcsu match list-parameters` to see valid names.")
+        raise click.BadParameter(
+            f"Unknown parameter {param_name!r}. Run `nagcsu match list-parameters` to see valid names."
+        )
 
     project_config, base_deck = _context.load(ctx)
     parsed_values = [float(value) for value in values.split(",")]
@@ -61,21 +74,33 @@ def sweep_cmd(ctx: click.Context, param_name: str, values: str, group_label: str
         records.append(record)
         _context.echo_outcome_header(record.run_id, record.j, record.prt_is_clean)
 
-    evaluate = pipeline.make_evaluate(project_config, base_deck, run_id_prefix="sweep", on_outcome=on_outcome)
+    evaluate = pipeline.make_evaluate(
+        project_config, base_deck, run_id_prefix="sweep", on_outcome=on_outcome
+    )
     result = grid.search(parameters.default_state(), {param_name: parsed_values}, evaluate)
     click.echo(f"\nBest: {param_name}={result.best.state[param_name]:g}, J={result.best.j:.4f}")
 
 
 @match_cmd.command(name="random")
-@click.option("--param", "param_names", multiple=True, required=True, help="Parameter to randomize, repeatable.")
+@click.option(
+    "--param",
+    "param_names",
+    multiple=True,
+    required=True,
+    help="Parameter to randomize, repeatable.",
+)
 @click.option("--trials", default=20, show_default=True, help="Number of random trials.")
 @click.option("--seed", default=None, type=int, help="Random seed, for reproducible trials.")
 @click.pass_context
-def random_cmd(ctx: click.Context, param_names: tuple[str, ...], trials: int, seed: int | None) -> None:
+def random_cmd(
+    ctx: click.Context, param_names: tuple[str, ...], trials: int, seed: int | None
+) -> None:
     """Randomly sample one or more parameters within their bounds."""
     unknown = [name for name in param_names if name not in parameters.PARAMETERS]
     if unknown:
-        raise click.BadParameter(f"Unknown parameter(s): {unknown}. Run `nagcsu match list-parameters` to see valid names.")
+        raise click.BadParameter(
+            f"Unknown parameter(s): {unknown}. Run `nagcsu match list-parameters` to see valid names."
+        )
 
     project_config, base_deck = _context.load(ctx)
     bounds_by_parameter = {name: parameters.PARAMETERS[name].bounds for name in param_names}
@@ -92,7 +117,9 @@ def random_cmd(ctx: click.Context, param_names: tuple[str, ...], trials: int, se
         ledger.append(ledger_path, record)
         _context.echo_outcome_header(record.run_id, record.j, record.prt_is_clean)
 
-    evaluate = pipeline.make_evaluate(project_config, base_deck, run_id_prefix="random", on_outcome=on_outcome)
+    evaluate = pipeline.make_evaluate(
+        project_config, base_deck, run_id_prefix="random", on_outcome=on_outcome
+    )
     result = random_search.search(
         parameters.default_state(), bounds_by_parameter, evaluate, num_trials=trials, seed=seed
     )
@@ -102,14 +129,29 @@ def random_cmd(ctx: click.Context, param_names: tuple[str, ...], trials: int, se
 
 
 @match_cmd.command(name="auto")
-@click.option("--target-j", default=None, type=float, help="Stop once J reaches this value. Defaults to the project config's objective.target_j.")
+@click.option(
+    "--target-j",
+    default=None,
+    type=float,
+    help="Stop once J reaches this value. Defaults to the project config's objective.target_j.",
+)
 @click.option(
     "--groups",
     default=None,
     help="Comma-separated subset of tuning groups to run, in the order given. Defaults to the full Stage D.1 priority order.",
 )
-@click.option("--passes-per-group", default=2, show_default=True, help="Optimization passes through each group's parameters.")
-@click.option("--report", "report_path", default=None, help="Write a Markdown summary report to this path once tuning stops.")
+@click.option(
+    "--passes-per-group",
+    default=2,
+    show_default=True,
+    help="Optimization passes through each group's parameters.",
+)
+@click.option(
+    "--report",
+    "report_path",
+    default=None,
+    help="Write a Markdown summary report to this path once tuning stops.",
+)
 @click.pass_context
 def auto_cmd(
     ctx: click.Context,
@@ -141,10 +183,14 @@ def auto_cmd(
     ledger_path = project_config.resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
-        record = _outcome_to_record(outcome, group=None, strategy="coordinate_descent", note="auto-tune trial")
+        record = _outcome_to_record(
+            outcome, group=None, strategy="coordinate_descent", note="auto-tune trial"
+        )
         ledger.append(ledger_path, record)
 
-    evaluate = pipeline.make_evaluate(project_config, base_deck, run_id_prefix="auto", on_outcome=on_outcome)
+    evaluate = pipeline.make_evaluate(
+        project_config, base_deck, run_id_prefix="auto", on_outcome=on_outcome
+    )
     result, outcomes = coordinate_descent.search(
         parameters.default_state(),
         groups_in_order,
@@ -163,7 +209,9 @@ def auto_cmd(
     click.echo(f"\nBest J={result.best.j:.4f}")
 
     final_run_id = "auto_final"
-    final_outcome = pipeline.execute_run(project_config, base_deck, result.best.state, run_id=final_run_id, score=True)
+    final_outcome = pipeline.execute_run(
+        project_config, base_deck, result.best.state, run_id=final_run_id, score=True
+    )
     final_record = _outcome_to_record(
         final_outcome,
         group=groups_in_order[-1] if groups_in_order else None,
@@ -199,7 +247,10 @@ def _outcome_to_record(
         strategy=strategy,
         j=outcome.objective_result.j if outcome.objective_result else None,
         vector_nrmse=(
-            {name: vector_score.nrmse for name, vector_score in outcome.objective_result.vector_scores.items()}
+            {
+                name: vector_score.nrmse
+                for name, vector_score in outcome.objective_result.vector_scores.items()
+            }
             if outcome.objective_result
             else None
         ),
@@ -217,7 +268,5 @@ def _write_parameters_snapshot(state: dict[str, float], path: pathlib.Path) -> N
     `.inc` file to write a value into. This snapshot is what a later
     refactor into `INCLUDE` files would read from.
     """
-    import yaml
-
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(state, sort_keys=True), encoding="utf-8")

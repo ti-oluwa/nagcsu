@@ -27,7 +27,9 @@ def test_parse_tallies_unconverged_wells(sample_prt_path: pathlib.Path) -> None:
     assert report.unconverged_well_counts["EVWRENI"] > 0
 
 
-def test_is_clean_true_for_the_baseline_run_despite_warnings(sample_prt_path: pathlib.Path) -> None:
+def test_is_clean_true_for_the_baseline_run_despite_warnings(
+    sample_prt_path: pathlib.Path,
+) -> None:
     report = prt.parse(sample_prt_path)
     # The baseline run has hundreds of well-convergence warnings but zero
     # fatal errors/bugs and completed every report step, so it counts as

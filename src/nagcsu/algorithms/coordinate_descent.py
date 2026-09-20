@@ -18,7 +18,9 @@ shipped defaults rather than an arbitrary starting point.
 
 import dataclasses
 
-from nagcsu.algorithms import EvaluateFunction, SearchResult, Trial, best_of
+import scipy.optimize
+
+from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -65,8 +67,6 @@ def search(
         after the target was already reached is skipped and not
         included).
     """
-    import scipy.optimize
-
     trials: list[Trial] = []
     current_best_state = dict(base_state)
     current_best_j = evaluate(current_best_state)
@@ -112,4 +112,6 @@ def search(
             )
         )
 
-    return SearchResult(trials=trials, best=best_of(trials), strategy="coordinate_descent"), outcomes
+    return SearchResult(
+        trials=trials, best=best_of(trials), strategy="coordinate_descent"
+    ), outcomes

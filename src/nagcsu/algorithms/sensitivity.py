@@ -11,7 +11,7 @@ points to when suggesting what to try next after stopping.
 
 import dataclasses
 
-from nagcsu.algorithms import EvaluateFunction, Trial
+from nagcsu.algorithms.base import EvaluateFunction, Trial
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

@@ -25,7 +25,9 @@ def list_cmd(ctx: click.Context, limit: int) -> None:
     click.echo(f"{'Run ID':<20}{'Group':<24}{'Strategy':<20}{'J':>10}  Note")
     for record in records[-limit:]:
         j_text = f"{record.j:.4f}" if record.j is not None else "-"
-        click.echo(f"{record.run_id:<20}{(record.group or '-'):<24}{(record.strategy or '-'):<20}{j_text:>10}  {record.note}")
+        click.echo(
+            f"{record.run_id:<20}{(record.group or '-'):<24}{(record.strategy or '-'):<20}{j_text:>10}  {record.note}"
+        )
 
     best = ledger.best_record(records)
     if best:
@@ -34,7 +36,12 @@ def list_cmd(ctx: click.Context, limit: int) -> None:
 
 @report_cmd.command(name="show")
 @click.argument("run_id", default="latest")
-@click.option("--output", "output_path", default=None, help="Write the report to this path instead of printing it.")
+@click.option(
+    "--output",
+    "output_path",
+    default=None,
+    help="Write the report to this path instead of printing it.",
+)
 @click.pass_context
 def show_cmd(ctx: click.Context, run_id: str, output_path: str | None) -> None:
     """Render a Markdown snapshot report for one logged run.

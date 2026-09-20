@@ -32,12 +32,22 @@ def test_grid_search_refuses_a_grid_larger_than_the_cap() -> None:
 
 def test_random_search_is_reproducible_with_a_seed() -> None:
     result_one = random_search.search(
-        {"a": 0.0, "b": 0.0}, {"a": (-10, 10), "b": (-10, 10)}, quadratic_bowl, num_trials=10, seed=42
+        {"a": 0.0, "b": 0.0},
+        {"a": (-10, 10), "b": (-10, 10)},
+        quadratic_bowl,
+        num_trials=10,
+        seed=42,
     )
     result_two = random_search.search(
-        {"a": 0.0, "b": 0.0}, {"a": (-10, 10), "b": (-10, 10)}, quadratic_bowl, num_trials=10, seed=42
+        {"a": 0.0, "b": 0.0},
+        {"a": (-10, 10), "b": (-10, 10)},
+        quadratic_bowl,
+        num_trials=10,
+        seed=42,
     )
-    assert [trial.state for trial in result_one.trials] == [trial.state for trial in result_two.trials]
+    assert [trial.state for trial in result_one.trials] == [
+        trial.state for trial in result_two.trials
+    ]
 
 
 def test_coordinate_descent_reaches_the_minimum() -> None:
@@ -61,7 +71,7 @@ def test_coordinate_descent_stops_at_target_without_touching_later_groups() -> N
         calls.append(state)
         return quadratic_bowl(state)
 
-    result, outcomes = coordinate_descent.search(
+    _result, outcomes = coordinate_descent.search(
         {"a": 0.0, "b": 0.0, "c": 0.0},
         ["g1", "g2"],
         {

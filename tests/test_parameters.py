@@ -52,8 +52,8 @@ def test_apply_permeability_multiplier_is_symmetric(sample_deck: Deck) -> None:
     patched = parameters.apply_state(sample_deck, state)
     high_values = re.findall(r"'PERMX'\s+([\d.]+)\s+1\s+10", patched.text)
     low_values = re.findall(r"'PERMX'\s+([\d.]+)\s+21\s+30", patched.text)
-    assert float(high_values[0]) == 1.30
-    assert float(low_values[0]) == 0.70
+    assert float(high_values[0]) == pytest.approx(1.30)
+    assert float(low_values[0]) == pytest.approx(0.70)
 
 
 def test_apply_sgof_table_preserves_saturation_and_capillary_pressure(sample_deck: Deck) -> None:
@@ -64,7 +64,7 @@ def test_apply_sgof_table_preserves_saturation_and_capillary_pressure(sample_dec
     original_rows = read_relperm_table(sample_deck, "SGOF")
     patched_rows = read_relperm_table(patched, "SGOF")
 
-    for original, new in zip(original_rows, patched_rows):
+    for original, new in zip(original_rows, patched_rows, strict=True):
         assert new[0] == original[0]  # Sg
         assert new[3] == original[3]  # Pcog
 
@@ -80,6 +80,6 @@ def test_apply_rock_and_porosity_scales_every_layer(sample_deck: Deck) -> None:
         for value in re.findall(r"'PORO'\s+([\d.]+)\s+1 30  1 30  \d \d", patched.text)
     ]
     expected = [0.24, 0.22, 0.20, 0.23, 0.19]
-    for actual, base in zip(poro_values, expected):
+    for actual, base in zip(poro_values, expected, strict=True):
         assert actual == pytest.approx(base * 1.5, abs=1e-3)
     assert "4.200E-06" in patched.text

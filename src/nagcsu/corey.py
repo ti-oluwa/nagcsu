@@ -12,18 +12,19 @@ Swc=0.13, Sorw=0.12, krw_max=0.78, nw=3.8, kro_max=0.80, no=4.0,
 Sorg=0.15) and reproduces the shipped table to within rounding.
 """
 
-import numpy
+import numpy as np
+import numpy.typing as npt
 
 
 def gas_relative_permeability(
-    gas_saturation: numpy.ndarray,
+    gas_saturation: npt.NDArray[np.float64],
     *,
     critical_gas_saturation: float,
     connate_water_saturation: float,
     residual_oil_saturation: float,
     max_gas_relative_permeability: float,
     gas_corey_exponent: float,
-) -> numpy.ndarray:
+) -> npt.NDArray[np.float64]:
     """Corey gas relative permeability for an SGOF table.
 
     :param gas_saturation: Sg values to evaluate at, as fractions.
@@ -39,20 +40,20 @@ def gas_relative_permeability(
     """
     span = 1.0 - connate_water_saturation - critical_gas_saturation - residual_oil_saturation
     normalized = (gas_saturation - critical_gas_saturation) / span
-    normalized = numpy.clip(normalized, 0.0, 1.0)
+    normalized = np.clip(normalized, 0.0, 1.0)
     krg = max_gas_relative_permeability * normalized**gas_corey_exponent
-    return numpy.where(gas_saturation <= critical_gas_saturation, 0.0, krg)
+    return np.where(gas_saturation <= critical_gas_saturation, 0.0, krg)
 
 
 def oil_relative_permeability_in_gas(
-    gas_saturation: numpy.ndarray,
+    gas_saturation: npt.NDArray[np.float64],
     *,
     critical_gas_saturation: float,
     connate_water_saturation: float,
     residual_oil_saturation: float,
     max_oil_relative_permeability: float,
     oil_corey_exponent: float,
-) -> numpy.ndarray:
+) -> npt.NDArray[np.float64]:
     """Corey oil relative permeability (gas-oil system) for an SGOF table.
 
     :param gas_saturation: Sg values to evaluate at, as fractions.
@@ -66,18 +67,18 @@ def oil_relative_permeability_in_gas(
     """
     span = 1.0 - connate_water_saturation - critical_gas_saturation - residual_oil_saturation
     normalized = (1.0 - gas_saturation - connate_water_saturation - residual_oil_saturation) / span
-    normalized = numpy.clip(normalized, 0.0, 1.0)
+    normalized = np.clip(normalized, 0.0, 1.0)
     return max_oil_relative_permeability * normalized**oil_corey_exponent
 
 
 def water_relative_permeability(
-    water_saturation: numpy.ndarray,
+    water_saturation: npt.NDArray[np.float64],
     *,
     connate_water_saturation: float,
     residual_oil_saturation: float,
     max_water_relative_permeability: float,
     water_corey_exponent: float,
-) -> numpy.ndarray:
+) -> npt.NDArray[np.float64]:
     """Corey water relative permeability for an SWOF table.
 
     :param water_saturation: Sw values to evaluate at, as fractions.
@@ -91,19 +92,19 @@ def water_relative_permeability(
     """
     span = 1.0 - connate_water_saturation - residual_oil_saturation
     normalized = (water_saturation - connate_water_saturation) / span
-    normalized = numpy.clip(normalized, 0.0, 1.0)
+    normalized = np.clip(normalized, 0.0, 1.0)
     krw = max_water_relative_permeability * normalized**water_corey_exponent
-    return numpy.where(water_saturation <= connate_water_saturation, 0.0, krw)
+    return np.where(water_saturation <= connate_water_saturation, 0.0, krw)
 
 
 def oil_relative_permeability_in_water(
-    water_saturation: numpy.ndarray,
+    water_saturation: npt.NDArray[np.float64],
     *,
     connate_water_saturation: float,
     residual_oil_saturation: float,
     max_oil_relative_permeability: float,
     oil_corey_exponent: float,
-) -> numpy.ndarray:
+) -> npt.NDArray[np.float64]:
     """Corey oil relative permeability (water-oil system) for an SWOF table.
 
     :param water_saturation: Sw values to evaluate at, as fractions.
@@ -116,5 +117,5 @@ def oil_relative_permeability_in_water(
     """
     span = 1.0 - connate_water_saturation - residual_oil_saturation
     normalized = (1.0 - water_saturation - residual_oil_saturation) / span
-    normalized = numpy.clip(normalized, 0.0, 1.0)
+    normalized = np.clip(normalized, 0.0, 1.0)
     return max_oil_relative_permeability * normalized**oil_corey_exponent

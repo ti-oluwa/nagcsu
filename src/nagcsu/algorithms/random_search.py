@@ -8,7 +8,7 @@ evaluation budget.
 
 import random
 
-from nagcsu.algorithms import EvaluateFunction, SearchResult, Trial, best_of
+from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of
 
 
 def search(

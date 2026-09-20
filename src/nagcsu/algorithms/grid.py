@@ -7,8 +7,7 @@ how many combinations it will silently run.
 
 import itertools
 
-from nagcsu.algorithms import EvaluateFunction, SearchResult, Trial, best_of
-
+from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of
 
 MAX_EVALUATIONS_DEFAULT = 500
 """Refuse to run a grid larger than this unless the caller raises
@@ -36,7 +35,9 @@ def search(
         would exceed `max_evaluations`.
     """
     parameter_names = list(values_by_parameter.keys())
-    combinations = list(itertools.product(*(values_by_parameter[name] for name in parameter_names)))
+    combinations = list(
+        itertools.product(*(values_by_parameter[name] for name in parameter_names))
+    )
     if len(combinations) > max_evaluations:
         raise ValueError(
             f"Grid over {parameter_names} has {len(combinations)} combinations, "
@@ -47,7 +48,7 @@ def search(
     trials: list[Trial] = []
     for combination in combinations:
         state = dict(base_state)
-        state.update(zip(parameter_names, combination))
+        state.update(zip(parameter_names, combination, strict=True))
         trials.append(Trial(state=state, j=evaluate(state)))
 
     return SearchResult(trials=trials, best=best_of(trials), strategy="grid")

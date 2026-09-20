@@ -13,12 +13,23 @@ disagreed with the Phase 2 Execution Plan's assumptions.
 
 ## Requirements
 
-- Python 3.14+ (see `.python-version`)
+- Python 3.10+
 - OPM Flow available on your `PATH` as `flow` (or point `--flow-executable`
   / `nagcsu.yaml`'s `flow_executable` at it). Not installed by this
   package; nagcsu only shells out to it.
 
 ## Install
+
+As a standalone tool, without setting up a virtual environment:
+
+```sh
+uvx --from git+https://github.com/ti-oluwa/nagcsu nagcsu --help
+# or
+pipx install git+https://github.com/ti-oluwa/nagcsu
+nagcsu --help
+```
+
+For local development, from a clone:
 
 ```sh
 uv sync
@@ -75,6 +86,8 @@ command uses, so it never drifts out of date.
 ```sh
 uv sync --group dev
 uv run pytest
+uv run ruff check .
+uv run ruff format .
 ```
 
 The test suite runs against the real sample deck and `.PRT` file already

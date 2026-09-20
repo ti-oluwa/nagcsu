@@ -13,7 +13,6 @@ import pytest
 
 from nagcsu.deck import Deck
 
-
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 SAMPLE_DECK_PATH = REPO_ROOT / "Data" / "NigerDelta UGH1 Composite Field.DATA"
 SAMPLE_PRT_PATH = REPO_ROOT / "Data" / "NIGERDELTA UGH1 COMPOSITE FIELD.PRT"

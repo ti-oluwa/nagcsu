@@ -22,16 +22,14 @@ def test_guess_column_map_accepts_colon_and_dash_separators() -> None:
 
 
 def test_load_observed_history_averages_per_well_columns(tmp_path) -> None:
-    frame = pandas.DataFrame(
-        {
-            "DATE": pandas.date_range("2020-01-01", periods=2, freq="YS"),
-            "FPR": [2700, 2650],
-            "WWCT_A": [0.10, 0.20],
-            "WGOR_A": [800, 810],
-            "WWCT_B": [0.20, 0.40],
-            "WGOR_B": [820, 830],
-        }
-    )
+    frame = pandas.DataFrame({
+        "DATE": pandas.date_range("2020-01-01", periods=2, freq="YS"),
+        "FPR": [2700, 2650],
+        "WWCT_A": [0.10, 0.20],
+        "WGOR_A": [800, 810],
+        "WWCT_B": [0.20, 0.40],
+        "WGOR_B": [820, 830],
+    })
     path = tmp_path / "history.xlsx"
     frame.to_excel(path, index=False)
 
@@ -52,14 +50,12 @@ def test_load_observed_history_raises_on_missing_pressure_column(tmp_path) -> No
 
 
 def test_load_observed_history_respects_explicit_column_map(tmp_path) -> None:
-    frame = pandas.DataFrame(
-        {
-            "DATE": pandas.date_range("2020-01-01", periods=1),
-            "Field Pressure (psia)": [2700],
-            "Water Cut": [0.12],
-            "GOR": [815],
-        }
-    )
+    frame = pandas.DataFrame({
+        "DATE": pandas.date_range("2020-01-01", periods=1),
+        "Field Pressure (psia)": [2700],
+        "Water Cut": [0.12],
+        "GOR": [815],
+    })
     path = tmp_path / "history.xlsx"
     frame.to_excel(path, index=False)
 

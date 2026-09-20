@@ -1,9 +1,42 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [project]
 name = "nagcsu"
 version = "0.0.1"
 description = "History matching and storage-cycling CLI for the N/AGCSU Phase 2 UGH-1 sector model"
+authors = [
+    { name = "tioluwa", email = "tioluwa.dev@gmail.com" }
+]
+maintainers = [
+    { name = "tioluwa", email = "tioluwa.dev@gmail.com" }
+]
 readme = "README.md"
-requires-python = ">=3.14"
+keywords = [
+    "reservoir-simulation", "history-matching", "gas-storage",
+    "reservoir-engineering", "opm-flow", "cli",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+requires-python = ">=3.10"
 dependencies = [
     "click>=8.1",
     "numpy>=1.26",
@@ -16,17 +49,38 @@ dependencies = [
     "scipy>=1.13",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ti-oluwa/nagcsu"
+Repository = "https://github.com/ti-oluwa/nagcsu"
+
 [project.scripts]
 nagcsu = "nagcsu.cli:main"
 
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "ruff>=0.12.1",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.ruff]
+target-version = "py310"
+line-length = 99
+preview = true
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/nagcsu"]
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "RUF",
+]
+ignore = ["line-too-long"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["nagcsu"]
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true

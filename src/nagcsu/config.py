@@ -15,7 +15,6 @@ import yaml
 
 from nagcsu import constants
 
-
 DEFAULT_CONFIG_FILENAME: typing.Final[str] = "nagcsu.yaml"
 """Filename a bare `nagcsu <command>` looks for in the current directory."""
 

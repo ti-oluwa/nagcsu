@@ -101,7 +101,9 @@ def run(
             timeout=timeout_seconds,
         )
     except (OSError, subprocess.TimeoutExpired) as error:
-        raise SimulationError(f"Could not run {flow_executable!r} on {deck_path}: {error}") from error
+        raise SimulationError(
+            f"Could not run {flow_executable!r} on {deck_path}: {error}"
+        ) from error
     elapsed_seconds = time.monotonic() - started
 
     case_basename = find_case_basename(output_dir)

@@ -37,7 +37,9 @@ def init_cmd(ctx: click.Context, deck_path: str, history_path: str, flow_executa
     """
     config_path: pathlib.Path = ctx.obj["config_path"]
     if config_path.exists():
-        raise click.ClickException(f"{config_path} already exists; delete it first or pass --config to write elsewhere")
+        raise click.ClickException(
+            f"{config_path} already exists; delete it first or pass --config to write elsewhere"
+        )
 
     project_config = config_module.ProjectConfig(
         deck_path=pathlib.Path(deck_path),
@@ -47,4 +49,6 @@ def init_cmd(ctx: click.Context, deck_path: str, history_path: str, flow_executa
     )
     config_module.save(project_config, config_path)
     click.echo(f"Wrote {config_path}")
-    click.echo(f"Run `nagcsu run` to try a baseline simulation, or `nagcsu match --help` to start tuning.")
+    click.echo(
+        "Run `nagcsu run` to try a baseline simulation, or `nagcsu match --help` to start tuning."
+    )

@@ -1,7 +1,5 @@
 """Tests for `nagcsu.deck` against the real UGH-1 deck."""
 
-import re
-
 import pytest
 
 from nagcsu.deck import Deck
@@ -44,14 +42,16 @@ def test_read_relperm_table_parses_swof(sample_deck: Deck) -> None:
 def test_patch_relperm_table_rewrites_only_kr_columns(sample_deck: Deck) -> None:
     from nagcsu.deck import patch_relperm_table, read_relperm_table
 
-    def double_kr(rows: list[tuple[float, float, float, float]]) -> list[tuple[float, float, float, float]]:
+    def double_kr(
+        rows: list[tuple[float, float, float, float]],
+    ) -> list[tuple[float, float, float, float]]:
         return [(sg, krg * 2, krog, pc) for sg, krg, krog, pc in rows]
 
     patched = patch_relperm_table(sample_deck, "SGOF", double_kr)
     original_rows = read_relperm_table(sample_deck, "SGOF")
     patched_rows = read_relperm_table(patched, "SGOF")
 
-    for original, patched_row in zip(original_rows, patched_rows):
+    for original, patched_row in zip(original_rows, patched_rows, strict=True):
         assert patched_row[0] == pytest.approx(original[0])  # Sg unchanged
         assert patched_row[3] == pytest.approx(original[3])  # Pcog unchanged
         assert patched_row[1] == pytest.approx(original[1] * 2, abs=1e-4)  # Krg doubled

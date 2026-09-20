@@ -12,15 +12,13 @@ override individual mappings via `history.column_map` in `nagcsu.yaml`
 
 import pathlib
 import re
-import typing
 
 import pandas
-
 
 _WELL_VECTOR_PATTERN = re.compile(r"^(?P<vector>WWCT|WGOR|WBHP)[_:\-](?P<well>.+)$", re.IGNORECASE)
 
 
-def guess_column_map(columns: typing.Iterable[str]) -> dict[str, str]:
+def guess_column_map(columns: list[str]) -> dict[str, str]:
     """Guess a res2df-vector-to-workbook-column mapping from column names.
 
     Matches a field-total pressure column named (case-insensitively)
@@ -50,7 +48,7 @@ def load_observed_history(
     sheet_name: str | int = 0,
     date_column: str = "DATE",
     column_map: dict[str, str] | None = None,
-    wells: typing.Sequence[str] = (),
+    wells: list[str] | None = None,
 ) -> pandas.DataFrame:
     """Load the observed history workbook into a field-total scoring frame.
 
@@ -75,11 +73,13 @@ def load_observed_history(
     """
     path = pathlib.Path(path)
     raw = pandas.read_excel(path, sheet_name=sheet_name)
-    guessed = guess_column_map(raw.columns)
+    guessed = guess_column_map(list(raw.columns))
     resolved_map = {**guessed, **(column_map or {})}
 
     if date_column not in raw.columns:
-        raise KeyError(f"Date column {date_column!r} not found in {path} (columns: {list(raw.columns)})")
+        raise KeyError(
+            f"Date column {date_column!r} not found in {path} (columns: {list(raw.columns)})"
+        )
 
     frame = pandas.DataFrame({date_column: raw[date_column]})
 
@@ -87,6 +87,7 @@ def load_observed_history(
         raise KeyError(f"No field pressure column found or mapped in {path}")
     frame["FPR"] = raw[resolved_map["FPR"]]
 
+    wells = wells or []
     frame["FWCT"] = _field_average(raw, resolved_map, "WWCT", wells, path)
     frame["FGOR"] = _field_average(raw, resolved_map, "WGOR", wells, path)
     return frame
@@ -96,7 +97,7 @@ def _field_average(
     raw: pandas.DataFrame,
     resolved_map: dict[str, str],
     vector_prefix: str,
-    wells: typing.Sequence[str],
+    wells: list[str],
     path: pathlib.Path,
 ) -> pandas.Series:
     """Average a per-well vector across `wells` into a field-total series."""

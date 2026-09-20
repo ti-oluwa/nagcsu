@@ -23,7 +23,9 @@ def test_save_and_load_round_trip(tmp_path) -> None:
 
 
 def test_validate_rejects_weights_not_summing_to_one() -> None:
-    bad = config.ProjectConfig(objective=config.ObjectiveConfig(weights={"pressure": 0.5, "watercut": 0.2, "gor": 0.1}))
+    bad = config.ProjectConfig(
+        objective=config.ObjectiveConfig(weights={"pressure": 0.5, "watercut": 0.2, "gor": 0.1})
+    )
     with pytest.raises(ValueError):
         bad.validate()
 

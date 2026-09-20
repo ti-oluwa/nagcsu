@@ -1,5 +1,7 @@
 """Tests for `nagcsu.ledger`."""
 
+import pytest
+
 from nagcsu import ledger
 
 
@@ -28,7 +30,7 @@ def test_append_and_load_round_trip(tmp_path) -> None:
 
     records = ledger.load(path)
     assert [record.run_id for record in records] == ["run_0000", "run_0001"]
-    assert records[1].j == 0.20
+    assert records[1].j == pytest.approx(0.20)
 
 
 def test_new_run_id_increments_from_existing_count(tmp_path) -> None:
@@ -37,7 +39,11 @@ def test_new_run_id_increments_from_existing_count(tmp_path) -> None:
 
 
 def test_best_record_ignores_unscored_runs(tmp_path) -> None:
-    records = [_record("run_0000", j=None), _record("run_0001", j=0.25), _record("run_0002", j=0.10)]
+    records = [
+        _record("run_0000", j=None),
+        _record("run_0001", j=0.25),
+        _record("run_0002", j=0.10),
+    ]
     best = ledger.best_record(records)
     assert best is not None
     assert best.run_id == "run_0002"

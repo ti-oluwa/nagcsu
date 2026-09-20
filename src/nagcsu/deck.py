@@ -16,7 +16,6 @@ import typing
 
 from nagcsu.exceptions import DeckPatchError
 
-
 RowTransform = typing.Callable[
     [list[tuple[float, float, float, float]]],
     list[tuple[float, float, float, float]],
@@ -146,7 +145,9 @@ def read_relperm_table(deck: Deck, keyword: str) -> list[tuple[float, float, flo
     """
     block = _find_table_block(deck, keyword)
     rows: list[tuple[float, float, float, float]] = []
-    row_pattern = re.compile(rf"^\s*({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s*$")
+    row_pattern = re.compile(
+        rf"^\s*({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s+({NUMBER_PATTERN})\s*$"
+    )
     for line in block.body_lines:
         match = row_pattern.match(line)
         if match:
@@ -202,8 +203,7 @@ def find_block_span(deck: Deck, keyword: str) -> tuple[int, int]:
     matches = list(keyword_pattern.finditer(deck.text))
     if len(matches) != 1:
         raise DeckPatchError(
-            f"Expected exactly one {keyword} keyword line in {deck.path}, "
-            f"found {len(matches)}"
+            f"Expected exactly one {keyword} keyword line in {deck.path}, found {len(matches)}"
         )
     keyword_match = matches[0]
     closing_pattern = re.compile(r"^\s*/\s*$", re.MULTILINE)
@@ -268,7 +268,9 @@ def _find_table_block(deck: Deck, keyword: str) -> _TableBlock:
     start, end = find_block_span(deck, keyword)
     block_text = deck.text[start:end]
     lines = block_text.splitlines()
-    data_row_pattern = re.compile(rf"^\s*{NUMBER_PATTERN}\s+{NUMBER_PATTERN}\s+{NUMBER_PATTERN}\s+{NUMBER_PATTERN}\s*$")
+    data_row_pattern = re.compile(
+        rf"^\s*{NUMBER_PATTERN}\s+{NUMBER_PATTERN}\s+{NUMBER_PATTERN}\s+{NUMBER_PATTERN}\s*$"
+    )
     first_data_line_index = next(
         (index for index, line in enumerate(lines) if data_row_pattern.match(line)),
         len(lines),

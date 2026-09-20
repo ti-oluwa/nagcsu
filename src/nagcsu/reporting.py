@@ -11,6 +11,7 @@ import pathlib
 import typing
 
 from nagcsu import ledger
+from nagcsu.algorithms.coordinate_descent import GroupOutcome
 from nagcsu.algorithms.sensitivity import SensitivityResult
 from nagcsu.prt import PrtReport
 
@@ -19,8 +20,8 @@ def render_run_report(
     record: ledger.RunRecord,
     *,
     prt_report: PrtReport | None = None,
-    group_outcomes: typing.Sequence[typing.Any] = (),
-    sensitivity_results: typing.Sequence[SensitivityResult] = (),
+    group_outcomes: list[GroupOutcome] | None = None,
+    sensitivity_results: list[SensitivityResult] | None = None,
 ) -> str:
     """Render a single run's snapshot as a Markdown document.
 
@@ -85,9 +86,13 @@ def render_run_report(
         lines.append("")
         lines.append(f"- Report steps completed: {len(prt_report.completed_report_steps)}")
         lines.append(f"- Last simulated date: {prt_report.last_simulated_date}")
-        lines.append(f"- Errors: {prt_report.errors}, Bugs: {prt_report.bugs}, Warnings: {prt_report.warnings}")
+        lines.append(
+            f"- Errors: {prt_report.errors}, Bugs: {prt_report.bugs}, Warnings: {prt_report.warnings}"
+        )
         if prt_report.unconverged_well_counts:
-            worst = sorted(prt_report.unconverged_well_counts.items(), key=lambda item: -item[1])[:3]
+            worst = sorted(prt_report.unconverged_well_counts.items(), key=lambda item: -item[1])[
+                :3
+            ]
             worst_text = ", ".join(f"{well} ({count})" for well, count in worst)
             lines.append(f"- Wells with the most convergence warnings: {worst_text}")
         lines.append(f"- Considered clean: {'yes' if prt_report.is_clean else 'no'}")

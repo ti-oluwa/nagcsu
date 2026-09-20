@@ -16,11 +16,10 @@ import dataclasses
 import re
 import typing
 
-import numpy
+import numpy as np
 
 from nagcsu import corey
-from nagcsu.deck import Deck, NUMBER_PATTERN, patch_relperm_table, transform_within_block
-
+from nagcsu.deck import NUMBER_PATTERN, Deck, patch_relperm_table, transform_within_block
 
 CONNATE_WATER_SATURATION: typing.Final[float] = 0.13
 """Swc, the first saturation row of the SWOF table. Taken directly from
@@ -273,8 +272,10 @@ def apply_permeability_multiplier(deck: Deck, state: dict[str, float]) -> Deck:
 def apply_sgof_table(deck: Deck, state: dict[str, float]) -> Deck:
     """Regenerate the SGOF table's Krg/Krog columns from the Corey model."""
 
-    def transform(rows: list[tuple[float, float, float, float]]) -> list[tuple[float, float, float, float]]:
-        gas_saturation = numpy.array([row[0] for row in rows])
+    def transform(
+        rows: list[tuple[float, float, float, float]],
+    ) -> list[tuple[float, float, float, float]]:
+        gas_saturation = np.array([row[0] for row in rows])
         capillary_pressure = [row[3] for row in rows]
         krg = corey.gas_relative_permeability(
             gas_saturation,
@@ -292,7 +293,15 @@ def apply_sgof_table(deck: Deck, state: dict[str, float]) -> Deck:
             max_oil_relative_permeability=MAX_OIL_RELATIVE_PERMEABILITY,
             oil_corey_exponent=state["sgof.oil_exponent"],
         )
-        return list(zip(gas_saturation.tolist(), krg.tolist(), krog.tolist(), capillary_pressure))
+        return list(
+            zip(
+                gas_saturation.tolist(),
+                krg.tolist(),
+                krog.tolist(),
+                capillary_pressure,
+                strict=True,
+            )
+        )
 
     return patch_relperm_table(deck, "SGOF", transform)
 
@@ -300,8 +309,10 @@ def apply_sgof_table(deck: Deck, state: dict[str, float]) -> Deck:
 def apply_swof_table(deck: Deck, state: dict[str, float]) -> Deck:
     """Regenerate the SWOF table's Krw/Krow columns from the Corey model."""
 
-    def transform(rows: list[tuple[float, float, float, float]]) -> list[tuple[float, float, float, float]]:
-        water_saturation = numpy.array([row[0] for row in rows])
+    def transform(
+        rows: list[tuple[float, float, float, float]],
+    ) -> list[tuple[float, float, float, float]]:
+        water_saturation = np.array([row[0] for row in rows])
         capillary_pressure = [row[3] for row in rows]
         krw = corey.water_relative_permeability(
             water_saturation,
@@ -317,7 +328,15 @@ def apply_swof_table(deck: Deck, state: dict[str, float]) -> Deck:
             max_oil_relative_permeability=MAX_OIL_RELATIVE_PERMEABILITY,
             oil_corey_exponent=4.0,
         )
-        return list(zip(water_saturation.tolist(), krw.tolist(), krow.tolist(), capillary_pressure))
+        return list(
+            zip(
+                water_saturation.tolist(),
+                krw.tolist(),
+                krow.tolist(),
+                capillary_pressure,
+                strict=True,
+            )
+        )
 
     return patch_relperm_table(deck, "SWOF", transform)
 

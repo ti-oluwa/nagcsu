@@ -2,7 +2,7 @@
 
 import click
 
-from nagcsu import ledger, parameters, pipeline
+from nagcsu import ledger, pipeline
 from nagcsu.cli import _context
 
 
@@ -14,11 +14,15 @@ from nagcsu.cli import _context
     metavar="NAME=VALUE",
     help="Override one parameter, repeatable. Unset parameters use their default (the deck as shipped).",
 )
-@click.option("--run-id", default=None, help="Output subdirectory name. Defaults to the next run_NNNN.")
+@click.option(
+    "--run-id", default=None, help="Output subdirectory name. Defaults to the next run_NNNN."
+)
 @click.option("--no-score", is_flag=True, help="Skip scoring against the observed history.")
 @click.option("--note", default="", help="Free-text note saved to the run ledger.")
 @click.pass_context
-def run_cmd(ctx: click.Context, param_pairs: tuple[str, ...], run_id: str | None, no_score: bool, note: str) -> None:
+def run_cmd(
+    ctx: click.Context, param_pairs: tuple[str, ...], run_id: str | None, no_score: bool, note: str
+) -> None:
     """Run the deck once and log the result to the run ledger.
 
     With no `--param`, this runs the baseline deck exactly as shipped.
@@ -32,7 +36,9 @@ def run_cmd(ctx: click.Context, param_pairs: tuple[str, ...], run_id: str | None
     records = ledger.load(ledger_path)
     resolved_run_id = run_id or ledger.new_run_id(records)
 
-    outcome = pipeline.execute_run(project_config, base_deck, state, run_id=resolved_run_id, score=not no_score)
+    outcome = pipeline.execute_run(
+        project_config, base_deck, state, run_id=resolved_run_id, score=not no_score
+    )
 
     record = ledger.RunRecord(
         run_id=outcome.run_id,
@@ -42,7 +48,10 @@ def run_cmd(ctx: click.Context, param_pairs: tuple[str, ...], run_id: str | None
         strategy=None,
         j=outcome.objective_result.j if outcome.objective_result else None,
         vector_nrmse=(
-            {name: vector_score.nrmse for name, vector_score in outcome.objective_result.vector_scores.items()}
+            {
+                name: vector_score.nrmse
+                for name, vector_score in outcome.objective_result.vector_scores.items()
+            }
             if outcome.objective_result
             else None
         ),

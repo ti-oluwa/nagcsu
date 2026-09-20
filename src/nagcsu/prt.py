@@ -17,7 +17,6 @@ import dataclasses
 import pathlib
 import re
 
-
 ERROR_SUMMARY_PATTERN = re.compile(
     r"Error summary:\s*\n"
     r"Warnings\s+(?P<warnings>\d+)\s*\n"
