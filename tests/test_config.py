@@ -42,3 +42,38 @@ def test_resolved_path_leaves_absolute_paths_unchanged(tmp_path) -> None:
     project_config = config.ProjectConfig(root=tmp_path)
     absolute = tmp_path.resolve() / "elsewhere" / "deck.DATA"
     assert project_config.resolved_path(absolute) == absolute
+
+
+def test_save_and_load_round_trips_extra_mounts_and_history_fields(tmp_path) -> None:
+    original = config.ProjectConfig(
+        root=tmp_path,
+        extra_mounts=["/data/shared", "/data/pvt=/mnt/pvt"],
+        history=config.HistoryConfig(
+            file_format="csv",
+            well_column="Field",
+            date_column="Date",
+        ),
+    )
+    config_path = tmp_path / "nagcsu.yaml"
+    config.save(original, config_path)
+
+    loaded = config.load(config_path)
+    assert loaded.extra_mounts == ["/data/shared", "/data/pvt=/mnt/pvt"]
+    assert loaded.history.file_format == "csv"
+    assert loaded.history.well_column == "Field"
+    assert loaded.history.date_column == "Date"
+
+
+def test_extra_mounts_defaults_to_an_empty_list(tmp_path) -> None:
+    config_path = tmp_path / "nagcsu.yaml"
+    config.save(config.ProjectConfig(root=tmp_path), config_path)
+    loaded = config.load(config_path)
+    assert loaded.extra_mounts == []
+
+
+def test_history_well_column_and_file_format_default_to_none(tmp_path) -> None:
+    config_path = tmp_path / "nagcsu.yaml"
+    config.save(config.ProjectConfig(root=tmp_path), config_path)
+    loaded = config.load(config_path)
+    assert loaded.history.well_column is None
+    assert loaded.history.file_format is None

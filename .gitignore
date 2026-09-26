@@ -21,3 +21,5 @@ benchmarks/runs
 *.png
 .cache
 *.patch
+*.yaml
+runs/

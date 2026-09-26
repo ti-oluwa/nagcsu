@@ -89,7 +89,12 @@ def execute_run(
     patched_deck.save(deck_path)
 
     try:
-        run_result = simulate.run(deck_path, output_dir, flow_executable=config.flow_executable)
+        run_result = simulate.run(
+            deck_path,
+            output_dir,
+            flow_executable=config.flow_executable,
+            extra_mounts=config.extra_mounts or None,
+        )
     except SimulationError as error:
         return RunOutcome(
             run_id=run_id,
@@ -110,8 +115,10 @@ def execute_run(
         simulated_frame = summary.load_summary(run_result.case_basename, wells=list(config.wells))
         observed_frame = history.load_observed_history(
             config.resolved_path(config.history.path),
+            file_format=config.history.file_format,
             sheet_name=config.history.sheet_name,
             date_column=config.history.date_column,
+            well_column=config.history.well_column,
             column_map=config.history.column_map,
             wells=list(config.wells),
         )

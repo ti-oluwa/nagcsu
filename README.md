@@ -16,7 +16,8 @@ disagreed with the Phase 2 Execution Plan's assumptions.
 - Python 3.10+
 - OPM Flow available on your `PATH` as `flow` (or point `--flow-executable`
   / `nagcsu.yaml`'s `flow_executable` at it). Not installed by this
-  package; nagcsu only shells out to it.
+  package; nagcsu only shells out to it, and works the same whether
+  that's a native binary or a Docker-wrapped one (see `docs/ARCHITECTURE.md`).
 
 ## Install
 
@@ -46,7 +47,9 @@ nagcsu --help
 ## Quick start
 
 From the repository root, where `Data/` already has the deck and
-observed history workbook:
+observed history file (`.xlsx`/`.xls` or `.csv`, one row per date or
+one row per well per date; both are auto-detected, see
+`docs/ARCHITECTURE.md`):
 
 ```sh
 nagcsu init                                   # writes nagcsu.yaml
@@ -80,6 +83,44 @@ Every parameter is a dotted `<group-ish>.<name>`, for example
 the full list with bounds, defaults and a one-line description of what
 each one controls; it's generated from the same registry every other
 command uses, so it never drifts out of date.
+
+## Observed history file format
+
+`history.path` in `nagcsu.yaml` can point at either an Excel file
+(`.xlsx`/`.xls`) or a CSV file; the extension decides which, or set
+`history.file_format: csv`/`excel` explicitly if it doesn't match the
+file's real content. Two layouts are auto-detected:
+
+- **Wide**: one row per date, `DATE,FPR,WWCT_<WELL>,WGOR_<WELL>,...`.
+- **Long**: one row per well per date (a typical monthly production
+  export), with a well-identifier column (`Field`, `Well`, and similar)
+  and per-well rate/pressure columns. Field totals are computed from
+  summed rates across wells, not averaged per-well ratios.
+
+If your file's columns aren't recognized, set `history.well_column`
+(long format) or `history.column_map` (wide format) explicitly in
+`nagcsu.yaml`. See "The observed history file" in `docs/ARCHITECTURE.md`
+for exactly what's matched and the one unit assumption (gas/oil rate
+units matching OPM Flow's own GOR convention) worth checking by hand.
+
+## Running OPM Flow through Docker
+
+If `flow` on your system is a Docker-wrapped script rather than a
+native binary, nothing extra is needed: `nagcsu` always launches it
+from the directory containing both the deck and that run's output
+folder, and passes both as relative paths, which is what such a
+wrapper's own directory-mounting needs to see them. If your deck has an
+`INCLUDE` reaching outside the project directory, list the extra host
+paths it needs under `extra_mounts` in `nagcsu.yaml`:
+
+```yaml
+extra_mounts:
+  - /data/shared          # mounted at the same path inside the container
+  - /data/pvt=/mnt/pvt    # mounted at a different path inside the container
+```
+
+See "Running OPM Flow through Docker" in `docs/ARCHITECTURE.md` for how
+this is implemented and why it matters.
 
 ## Development
 

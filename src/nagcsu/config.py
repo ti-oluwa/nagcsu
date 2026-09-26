@@ -1,7 +1,7 @@
 """Project configuration for a nagcsu working directory.
 
 A project config is a small YAML file (`nagcsu.yaml` by default) that
-records where the deck, history workbook and run outputs live, plus the
+records where the deck, history file and run outputs live, plus the
 objective weights and tuning target, so every CLI command can be run as
 `nagcsu <command> ...` without repeating `--deck`, `--history` and
 similar paths on every invocation.
@@ -36,27 +36,41 @@ class ObjectiveConfig:
 
 @dataclasses.dataclass(slots=True)
 class HistoryConfig:
-    """Where the synthetic production history lives and how to read it."""
+    """Where the observed production history lives and how to read it."""
 
     path: pathlib.Path = pathlib.Path("Data/NigerDelta Synthetic Production History.xlsx")
-    """Path to the workbook holding the observed pressure/water-cut/GOR
+    """Path to the file holding the observed pressure/water-cut/GOR
     history, relative to the project root unless given as an absolute
-    path.
+    path. Both `.xlsx`/`.xls` and `.csv` are supported; see `file_format`
+    if the extension does not match the file's real content.
+    """
+
+    file_format: str | None = None
+    """`"csv"` or `"excel"`, overriding the guess `nagcsu.history` makes
+    from `path`'s extension. Leave unset to let the extension decide.
     """
 
     sheet_name: str | int = 0
-    """Worksheet to read, passed straight through to `pandas.read_excel`."""
+    """Worksheet to read for an Excel file. Ignored for CSV."""
 
     date_column: str = "DATE"
     """Name of the column holding the report date for each history row."""
 
+    well_column: str | None = None
+    """Name of the well-identifier column (for example "Field" or
+    "Well") in a long-format history file, one row per well per date.
+    Leave unset to auto-detect (see
+    `nagcsu.history.detect_long_format_columns`); set explicitly if
+    auto-detection does not recognize your file's well column, or to
+    force long-format handling.
+    """
+
     column_map: dict[str, str] | None = None
     """Optional explicit mapping from a res2df summary vector name (for
-    example "FPR" or "WWCT:AFIESERE") to the workbook's column name for
-    that same quantity. Leave unset to use
-    `nagcsu.history.guess_column_map`, which matches the
-    DATE,FPR,WWCT_<WELL>,WGOR_<WELL> layout Stage B.2 of the Execution
-    Plan builds the workbook in.
+    example "FPR" or "WWCT:AFIESERE") to the file's column name for
+    that same quantity, for a wide-format (one row per date) history
+    file. Leave unset to use `nagcsu.history.guess_column_map`. Has no
+    effect on a long-format (one row per well per date) file.
     """
 
 
@@ -76,7 +90,22 @@ class ProjectConfig:
     """Path to the JSON run ledger (see `nagcsu.ledger`)."""
 
     flow_executable: str = "flow"
-    """Name or path of the OPM Flow executable to invoke for each run."""
+    """Name or path of the OPM Flow executable to invoke for each run.
+    Works the same whether this is a native binary or a Docker-wrapped
+    script (see `nagcsu.simulate`'s module docstring); nothing here
+    needs to change between the two.
+    """
+
+    extra_mounts: list[str] = dataclasses.field(default_factory=list)
+    """Extra host directories a Docker-wrapped `flow` needs to see,
+    beyond the deck and each run's output directory (which
+    `nagcsu.simulate.run` always makes visible on its own). Each entry
+    is a bare host path, or `HOST=CONTAINER` to mount at a different
+    path inside the container; see `nagcsu.simulate.format_extra_mounts_env`.
+    Only relevant if the deck has an `INCLUDE` pointing outside this
+    project's own directory tree; harmless, and normally left empty,
+    otherwise.
+    """
 
     wells: tuple[str, ...] = constants.PRODUCER_WELLS
     """Producer well names to score and report on."""
@@ -97,7 +126,7 @@ class ProjectConfig:
         """Return `path` resolved against this project's root directory.
 
         Absolute paths are returned unchanged; relative paths are joined
-        onto :attr:`root`.
+        onto `root`.
         """
         path = pathlib.Path(path)
         if path.is_absolute():
@@ -151,8 +180,10 @@ def load(config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> ProjectCo
         path=pathlib.Path(
             history_raw.get("path", "Data/NigerDelta Synthetic Production History.xlsx")
         ),
+        file_format=history_raw.get("file_format"),
         sheet_name=history_raw.get("sheet_name", 0),
         date_column=history_raw.get("date_column", "DATE"),
+        well_column=history_raw.get("well_column"),
         column_map=history_raw.get("column_map"),
     )
 
@@ -161,6 +192,7 @@ def load(config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> ProjectCo
         output_root=pathlib.Path(raw.get("output_root", "runs")),
         ledger_path=pathlib.Path(raw.get("ledger_path", "runs/ledger.json")),
         flow_executable=raw.get("flow_executable", "flow"),
+        extra_mounts=list(raw.get("extra_mounts", [])),
         wells=tuple(raw.get("wells", constants.PRODUCER_WELLS)),
         objective=objective,
         history=history,
@@ -186,6 +218,7 @@ def save(config: ProjectConfig, config_path: pathlib.Path | str = DEFAULT_CONFIG
         "output_root": str(config.output_root),
         "ledger_path": str(config.ledger_path),
         "flow_executable": config.flow_executable,
+        "extra_mounts": list(config.extra_mounts),
         "wells": list(config.wells),
         "objective": {
             "weights": config.objective.weights,
@@ -193,8 +226,10 @@ def save(config: ProjectConfig, config_path: pathlib.Path | str = DEFAULT_CONFIG
         },
         "history": {
             "path": str(config.history.path),
+            "file_format": config.history.file_format,
             "sheet_name": config.history.sheet_name,
             "date_column": config.history.date_column,
+            "well_column": config.history.well_column,
             "column_map": config.history.column_map,
         },
     }
