@@ -79,6 +79,7 @@ def score(
     *,
     weights: dict[str, float],
     date_column: str = "DATE",
+    nrmse_ceiling: float | None = None,
 ) -> ObjectiveResult:
     """Compute the combined objective `J` between a simulated and observed frame.
 
@@ -89,6 +90,19 @@ def score(
 
     :param weights: NRMSE weight per entry in `SCORED_FIELD_VECTORS`,
         typically `nagcsu.config.ObjectiveConfig.weights`.
+    :param nrmse_ceiling: If given, each vector's NRMSE is clipped to
+        this value before being weighted into `J`. A vector whose
+        history sits in a narrow range (GOR is the usual case) can swing
+        to an enormous NRMSE the moment the simulator's own output
+        diverges even a little, for example a solution-gas reservoir
+        producing free gas once pressure drops below bubble point. Left
+        unclipped, that one vector silently drowns out real signal from
+        the other two in every search strategy, since they only ever see
+        the combined `J`. `None` (the default) preserves the old,
+        unclipped behavior; a run's own `VectorScore.nrmse` is always the
+        raw value either way, so `nagcsu sanity check-init` and manual
+        inspection still see the true, unclipped mismatch even when a
+        ceiling is set for the search itself.
     :raises nagcsu.exceptions.HistoryAlignmentError: if the two frames
         share no common dates, or if a required column is missing from
         either frame.
@@ -132,8 +146,9 @@ def score(
     vector_scores: dict[str, VectorScore] = {}
     weighted_total = 0.0
     for name, vector in SCORED_FIELD_VECTORS.items():
-        vector_score = compute_nrmse(merged[f"{vector}_sim"], merged[f"{vector}_obs"])
-        vector_scores[name] = VectorScore(name=name, nrmse=vector_score, point_count=len(merged))
-        weighted_total += weights.get(name, 0.0) * vector_score
+        raw_nrmse = compute_nrmse(merged[f"{vector}_sim"], merged[f"{vector}_obs"])
+        vector_scores[name] = VectorScore(name=name, nrmse=raw_nrmse, point_count=len(merged))
+        clamped_nrmse = min(raw_nrmse, nrmse_ceiling) if nrmse_ceiling is not None else raw_nrmse
+        weighted_total += weights.get(name, 0.0) * clamped_nrmse
 
     return ObjectiveResult(j=weighted_total, vector_scores=vector_scores, weights=dict(weights))

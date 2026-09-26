@@ -120,6 +120,7 @@ def execute_run(
             observed_frame,
             weights=config.objective.weights,
             date_column=history.OUTPUT_DATE_COLUMN,
+            nrmse_ceiling=config.objective.nrmse_ceiling,
         )
 
     return RunOutcome(

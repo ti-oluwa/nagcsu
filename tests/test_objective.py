@@ -48,6 +48,29 @@ def test_score_combines_weighted_compute_nrmse() -> None:
     assert result.j == pytest.approx(expected_j)
 
 
+def test_score_clips_a_runaway_vector_when_ceiling_is_set() -> None:
+    # GOR blows up (huge NRMSE) while pressure and watercut match exactly;
+    # unclipped, GOR alone should dominate J even at a small weight.
+    simulated = get_frame([2700, 2650], [0.10, 0.15], [820, 50_000])
+    observed = get_frame([2700, 2650], [0.10, 0.15], [820, 830])
+
+    unclipped = objective.score(
+        simulated, observed, weights={"pressure": 0.5, "watercut": 0.35, "gor": 0.15}
+    )
+    clipped = objective.score(
+        simulated,
+        observed,
+        weights={"pressure": 0.5, "watercut": 0.35, "gor": 0.15},
+        nrmse_ceiling=5.0,
+    )
+
+    assert unclipped.j > 100
+    assert clipped.j == pytest.approx(0.15 * 5.0)
+    # The logged, unclipped NRMSE is preserved either way, so a ceiling
+    # never hides the true mismatch from `nagcsu sanity`/ledger inspection.
+    assert clipped.vector_scores["gor"].nrmse == unclipped.vector_scores["gor"].nrmse
+
+
 def test_score_raises_on_no_overlapping_dates() -> None:
     simulated = get_frame([2700], [0.1], [820])
     observed = get_frame([2700], [0.1], [820])

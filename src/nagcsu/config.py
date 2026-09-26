@@ -32,6 +32,18 @@ class ObjectiveConfig:
     target_j: float = constants.DEFAULT_TARGET_J
     """J value at or below which tuning should stop (Stage C.4)."""
 
+    nrmse_ceiling: float | None = None
+    """If set, each vector's NRMSE is clipped to this value before being
+    weighted into J (see `nagcsu.objective.score`). Left unset (`None`),
+    a single vector that swings enormously, GOR after a bubble-point
+    crossing is the usual case, can dominate every search strategy's
+    combined J and mask real progress on the other two vectors. Setting
+    this does not hide the problem: a run's logged `vector_nrmse` in the
+    ledger is always the true, unclipped value regardless of this
+    setting; it only stops the search itself from being driven by one
+    runaway vector.
+    """
+
 
 @dataclasses.dataclass(slots=True)
 class HistoryConfig:
@@ -169,9 +181,11 @@ def load(config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE) -> Pro
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
 
     objective_dict: dict[str, typing.Any] = raw.get("objective", {})
+    raw_nrmse_ceiling = objective_dict.get("nrmse_ceiling")
     objective = ObjectiveConfig(
         weights=dict(objective_dict.get("weights", constants.DEFAULT_OBJECTIVE_WEIGHTS)),
         target_j=float(objective_dict.get("target_j", constants.DEFAULT_TARGET_J)),
+        nrmse_ceiling=float(raw_nrmse_ceiling) if raw_nrmse_ceiling is not None else None,
     )
 
     history_dict: dict[str, typing.Any] = raw.get("history", {})
@@ -222,6 +236,7 @@ def save(
         "objective": {
             "weights": config.objective.weights,
             "target_j": config.objective.target_j,
+            "nrmse_ceiling": config.objective.nrmse_ceiling,
         },
         "history": {
             "path": str(config.history.path),
