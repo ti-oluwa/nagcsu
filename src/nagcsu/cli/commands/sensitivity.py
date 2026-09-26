@@ -58,7 +58,7 @@ def run(ctx: click.Context, group_name: str | None, perturbation_fraction: float
         project_config, base_deck, run_id_prefix="sensitivity", on_outcome=on_outcome
     )
 
-    results, _trials = sensitivity.run(
+    results, _ = sensitivity.run(
         parameters.default_state(),
         bounds_by_parameter,
         evaluate,

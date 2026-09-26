@@ -249,19 +249,27 @@ def load_observed_history(
     path = pathlib.Path(path)
     raw = read_raw_table(path, sheet_name=sheet_name, file_format=file_format)
 
-    if date_column not in raw.columns:
+    date_matches = [
+        column
+        for column in raw.columns
+        if isinstance(column, str) and column.strip().casefold() == date_column.strip().casefold()
+    ]
+    if len(date_matches) != 1:
         raise KeyError(
             f"Date column {date_column!r} not found in {path} (columns: {list(raw.columns)})"
         )
+    source_date_column = date_matches[0]
 
     long_format = detect_long_format_columns(list(raw.columns))
     if well_column is not None:
         long_format = {**(long_format or {}), "well": well_column}
 
     if long_format is not None:
-        return load_long_format(raw, date_column=date_column, mapping=long_format, path=path)
+        return load_long_format(
+            raw, date_column=source_date_column, mapping=long_format, path=path
+        )
     return load_wide_format(
-        raw, date_column=date_column, column_map=column_map, wells=wells or [], path=path
+        raw, date_column=source_date_column, column_map=column_map, wells=wells or [], path=path
     )
 
 

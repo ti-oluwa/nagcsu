@@ -82,7 +82,8 @@ def score(
 ) -> ObjectiveResult:
     """Compute the combined objective J between a simulated and observed frame.
 
-    Both frames must have a `date_column` plus one column per entry in
+    Both frames must have a date column matching `date_column` without
+    regard to letter case, plus one column per entry in
     `SCORED_FIELD_VECTORS`; they are inner-joined on date before scoring,
     so only dates present in both contribute.
 
@@ -92,21 +93,37 @@ def score(
         share no common dates, or if a required column is missing from
         either frame.
     """
-    print(simulated.head())
-    print(observed.head())
+
+    def matching_columns(frame: pandas.DataFrame, name: str) -> list[str]:
+        return [
+            column
+            for column in frame.columns
+            if isinstance(column, str) and column.strip().casefold() == name.strip().casefold()
+        ]
+
+    simulated_date_columns = matching_columns(simulated, date_column)
+    observed_date_columns = matching_columns(observed, date_column)
     missing_columns = [
         column
-        for column in (date_column, *SCORED_FIELD_VECTORS.values())
+        for column in SCORED_FIELD_VECTORS.values()
         if column not in simulated.columns or column not in observed.columns
     ]
+    if len(simulated_date_columns) != 1 or len(observed_date_columns) != 1:
+        missing_columns.insert(0, date_column)
     if missing_columns:
         raise HistoryAlignmentError(
-            f"Simulated and observed frames must both have columns "
-            f"{[date_column, *SCORED_FIELD_VECTORS.values()]}; missing or "
+            f"Simulated and observed frames must both have a date column matching "
+            f"{date_column!r} (case-insensitively) and columns "
+            f"{list(SCORED_FIELD_VECTORS.values())}; missing or "
             f"mismatched: {missing_columns}"
         )
 
-    merged = simulated.merge(observed, on=date_column, suffixes=("_sim", "_obs"))
+    merged = simulated.merge(
+        observed,
+        left_on=simulated_date_columns[0],
+        right_on=observed_date_columns[0],
+        suffixes=("_sim", "_obs"),
+    )
     if merged.empty:
         raise HistoryAlignmentError(
             f"No overlapping {date_column!r} values between simulated and observed frames"

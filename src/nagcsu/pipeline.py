@@ -113,7 +113,6 @@ def execute_run(
     objective_result = None
     if score and run_result.case_basename is not None:
         simulated_frame = summary.load_summary(run_result.case_basename, wells=list(config.wells))
-        print(dataclasses.asdict(config.history))
         observed_frame = history.load_observed_history(
             config.get_resolved_path(config.history.path),
             file_format=config.history.file_format,
@@ -127,7 +126,7 @@ def execute_run(
             simulated_frame,
             observed_frame,
             weights=config.objective.weights,
-            date_column=config.history.date_column,
+            date_column=history.OUTPUT_DATE_COLUMN,
         )
 
     return RunOutcome(

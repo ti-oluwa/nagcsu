@@ -25,7 +25,8 @@ def search(
     *,
     max_evaluations: int = MAX_EVALUATIONS_DEFAULT,
 ) -> SearchResult:
-    """Evaluate every combination of `values_by_parameter` against `base_state`.
+    """
+    Evaluate every combination of `values_by_parameter` against `base_state`.
 
     :param base_state: Full parameter state; every parameter not in
         `values_by_parameter` is held fixed at its value here.

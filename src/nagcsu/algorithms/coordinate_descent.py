@@ -99,9 +99,9 @@ def search(
                     bounds=(low, high),
                     method="bounded",
                 )
-                if result.fun < current_best_j:
-                    current_best_state[parameter_name] = result.x
-                    current_best_j = result.fun
+                if result.fun < current_best_j:  # type: ignore[attr-defined]
+                    current_best_state[parameter_name] = result.x  # type: ignore[attr-defined]
+                    current_best_j = result.fun  # type: ignore[attr-defined]
 
         outcomes.append(
             GroupOutcome(
@@ -113,5 +113,7 @@ def search(
         )
 
     return SearchResult(
-        trials=trials, best=best_of(trials), strategy="coordinate_descent"
+        trials=trials,
+        best=best_of(trials),
+        strategy="coordinate_descent",
     ), outcomes
