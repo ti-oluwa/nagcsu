@@ -57,6 +57,6 @@ def peek_vectors(case_basename: pathlib.Path | str) -> list[str]:
     keywords: list[str] = []
     for entry in resfo.lazy_read(smspec_path):
         if entry.read_keyword().strip() == "KEYWORDS":
-            keywords = [value.strip() for value in entry.read_array()]
+            keywords = [value.strip() for value in entry.read_array()]  # type: ignore
             break
     return keywords

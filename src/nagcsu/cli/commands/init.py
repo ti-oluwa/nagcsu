@@ -5,21 +5,21 @@ import pathlib
 import click
 
 from nagcsu import config as config_module
-from nagcsu import history
+from nagcsu import constants, history
 
 
 @click.command(name="init")
 @click.option(
     "--deck",
     "deck_path",
-    default="Data/NigerDelta UGH1 Composite Field.DATA",
+    default=constants.DEFAULT_DECK_PATH,
     show_default=True,
     help="Path to the OPM Flow .DATA deck this project tunes.",
 )
 @click.option(
     "--history",
     "history_path",
-    default="Data/NigerDelta Synthetic Production History.xlsx",
+    default=constants.DEFAULT_HISTORY_PATH,
     show_default=True,
     help="Path to the observed production/pressure history file (.xlsx, .xls or .csv).",
 )

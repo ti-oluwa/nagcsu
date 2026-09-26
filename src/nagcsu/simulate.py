@@ -24,11 +24,15 @@ binary or a Docker-wrapped one, on every platform.
 """
 
 import dataclasses
+import io
 import os
 import pathlib
 import platform
 import subprocess
+import sys
+import threading
 import time
+import typing
 
 from nagcsu.exceptions import RunOutputNotFoundError, SimulationError
 
@@ -117,6 +121,33 @@ def format_extra_mounts_env(extra_mounts: list[str]) -> str:
     return separator.join(extra_mounts)
 
 
+class TextOutputIO(io.TextIOBase):
+    def __init__(self, out: typing.Iterable[typing.TextIO], /) -> None:
+        self.out = list(out)
+
+    def write(self, s: str) -> int:
+        if self.closed:
+            raise ValueError("I/O operation on closed file.")
+        for output in self.out:
+            output.write(s)
+        return len(s)
+
+    def flush(self) -> None:
+        if self.closed:
+            raise ValueError("I/O operation on closed file.")
+        for output in self.out:
+            output.flush()
+
+    def close(self) -> None:
+        super().close()
+
+
+def forward_output(source: typing.TextIO, destination: TextOutputIO) -> None:
+    for line in source:
+        destination.write(line)
+    destination.flush()
+
+
 def run(
     deck_path: pathlib.Path | str,
     output_dir: pathlib.Path | str,
@@ -161,7 +192,7 @@ def run(
         deck_arg = str(deck_path.resolve().relative_to(working_directory))
         output_dir_arg = str(output_dir.resolve().relative_to(working_directory))
     except ValueError:
-        # deck_path and output_dir share no common ancestor at all; fall
+        # `deck_path` and `output_dir` share no common ancestor at all; fall
         # back to absolute paths, which still works for a native flow
         # binary, just not for a Docker-wrapped one.
         deck_arg = str(deck_path.resolve())
@@ -172,35 +203,63 @@ def run(
         env["OPM_FLOW_EXTRA_MOUNTS"] = format_extra_mounts_env(extra_mounts)
 
     started = time.monotonic()
+    stderr_output = io.StringIO()
     try:
-        completed = subprocess.run(
+        process = subprocess.Popen(
             [flow_executable, deck_arg, f"--output-dir={output_dir_arg}", *(extra_args or [])],
             cwd=working_directory,
             env=env,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout_seconds,
+            bufsize=1,
         )
-    except (OSError, subprocess.TimeoutExpired) as error:
+    except OSError as error:
         raise SimulationError(
             f"Could not run {flow_executable!r} on {deck_path}: {error}"
         ) from error
+
+    assert process.stdout is not None
+    assert process.stderr is not None
+    stdout_output = io.StringIO()
+    stdout_thread = threading.Thread(
+        target=forward_output,
+        args=(process.stdout, TextOutputIO([stdout_output, sys.stdout])),
+    )
+    stderr_thread = threading.Thread(
+        target=forward_output,
+        args=(process.stderr, TextOutputIO([stderr_output, sys.stderr])),
+    )
+    stdout_thread.start()
+    stderr_thread.start()
+    try:
+        returncode = process.wait(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired as error:
+        process.kill()
+        process.wait()
+        stdout_thread.join()
+        stderr_thread.join()
+        raise SimulationError(
+            f"Could not run {flow_executable!r} on {deck_path}: {error}"
+        ) from error
+
+    stdout_thread.join()
+    stderr_thread.join()
     elapsed_seconds = time.monotonic() - started
 
     case_basename = find_case_basename(output_dir)
-    if completed.returncode != 0 and case_basename is None:
+    if returncode != 0 and case_basename is None:
         raise SimulationError(
-            f"{flow_executable} exited {completed.returncode} and wrote no summary output "
-            f"to {output_dir}",
-            returncode=completed.returncode,
-            stderr=completed.stderr,
+            f"{flow_executable} exited {returncode} and wrote no summary output to {output_dir}",
+            returncode=returncode,
+            stderr=stderr_output.getvalue(),
         )
 
     return RunResult(
         output_dir=output_dir,
         case_basename=case_basename,
-        returncode=completed.returncode,
-        stdout=completed.stdout,
-        stderr=completed.stderr,
+        returncode=returncode,
+        stdout=stdout_output.getvalue(),
+        stderr=stderr_output.getvalue(),
         elapsed_seconds=elapsed_seconds,
     )

@@ -221,7 +221,7 @@ def transform_within_block(
     *,
     expected_count: int | None = None,
     flags: int = 0,
-) -> "Deck":
+) -> Deck:
     """Apply `Deck.transform_each`, restricted to one keyword's block.
 
     Scoping the search to `keyword`'s own `(start, end)` span (see

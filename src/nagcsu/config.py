@@ -1,4 +1,5 @@
-"""Project configuration for a nagcsu working directory.
+"""
+Project configuration for a nagcsu working directory.
 
 A project config is a small YAML file (`nagcsu.yaml` by default) that
 records where the deck, history file and run outputs live, plus the
@@ -15,9 +16,6 @@ import yaml
 
 from nagcsu import constants
 
-DEFAULT_CONFIG_FILENAME: typing.Final[str] = "nagcsu.yaml"
-"""Filename a bare `nagcsu <command>` looks for in the current directory."""
-
 
 @dataclasses.dataclass(slots=True)
 class ObjectiveConfig:
@@ -26,7 +24,8 @@ class ObjectiveConfig:
     weights: dict[str, float] = dataclasses.field(
         default_factory=lambda: dict(constants.DEFAULT_OBJECTIVE_WEIGHTS)
     )
-    """NRMSE weight per scored vector, keyed by "pressure", "watercut"
+    """
+    NRMSE weight per scored vector, keyed by "pressure", "watercut"
     and "gor". Must sum to 1.0; `ProjectConfig.validate` checks this.
     """
 
@@ -38,7 +37,7 @@ class ObjectiveConfig:
 class HistoryConfig:
     """Where the observed production history lives and how to read it."""
 
-    path: pathlib.Path = pathlib.Path("Data/NigerDelta Synthetic Production History.xlsx")
+    path: pathlib.Path = constants.DEFAULT_HISTORY_PATH
     """Path to the file holding the observed pressure/water-cut/GOR
     history, relative to the project root unless given as an absolute
     path. Both `.xlsx`/`.xls` and `.csv` are supported; see `file_format`
@@ -78,15 +77,15 @@ class HistoryConfig:
 class ProjectConfig:
     """Top level configuration for a single nagcsu working directory."""
 
-    deck_path: pathlib.Path = pathlib.Path("Data/NigerDelta UGH1 Composite Field.DATA")
+    deck_path: pathlib.Path = constants.DEFAULT_DECK_PATH
     """Path to the OPM Flow `.DATA` deck this project tunes."""
 
-    output_root: pathlib.Path = pathlib.Path("runs")
+    output_root: pathlib.Path = constants.DEFAULT_OUTPUT_DIR
     """Directory each simulation run gets its own numbered subdirectory
     under. Created on first use if it does not already exist.
     """
 
-    ledger_path: pathlib.Path = pathlib.Path("runs/ledger.json")
+    ledger_path: pathlib.Path = constants.DEFAULT_LEDGER_PATH
     """Path to the JSON run ledger (see `nagcsu.ledger`)."""
 
     flow_executable: str = "flow"
@@ -151,7 +150,7 @@ class ProjectConfig:
             raise ValueError("At least one well must be configured to score against")
 
 
-def load(config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> ProjectConfig:
+def load(config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE) -> ProjectConfig:
     """Load a `ProjectConfig` from a YAML file.
 
     Missing keys fall back to the field defaults above, so a project can
@@ -169,28 +168,26 @@ def load(config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> ProjectCo
         )
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
 
-    objective_raw = raw.get("objective", {})
+    objective_dict: dict[str, typing.Any] = raw.get("objective", {})
     objective = ObjectiveConfig(
-        weights=dict(objective_raw.get("weights", constants.DEFAULT_OBJECTIVE_WEIGHTS)),
-        target_j=float(objective_raw.get("target_j", constants.DEFAULT_TARGET_J)),
+        weights=dict(objective_dict.get("weights", constants.DEFAULT_OBJECTIVE_WEIGHTS)),
+        target_j=float(objective_dict.get("target_j", constants.DEFAULT_TARGET_J)),
     )
 
-    history_raw = raw.get("history", {})
+    history_dict: dict[str, typing.Any] = raw.get("history", {})
     history = HistoryConfig(
-        path=pathlib.Path(
-            history_raw.get("path", "Data/NigerDelta Synthetic Production History.xlsx")
-        ),
-        file_format=history_raw.get("file_format"),
-        sheet_name=history_raw.get("sheet_name", 0),
-        date_column=history_raw.get("date_column", "DATE"),
-        well_column=history_raw.get("well_column"),
-        column_map=history_raw.get("column_map"),
+        path=pathlib.Path(history_dict.get("path", constants.DEFAULT_HISTORY_PATH)),
+        file_format=history_dict.get("file_format"),
+        sheet_name=history_dict.get("sheet_name", 0),
+        date_column=history_dict.get("date_column", "DATE"),
+        well_column=history_dict.get("well_column"),
+        column_map=history_dict.get("column_map"),
     )
 
     config = ProjectConfig(
-        deck_path=pathlib.Path(raw.get("deck_path", "Data/NigerDelta UGH1 Composite Field.DATA")),
-        output_root=pathlib.Path(raw.get("output_root", "runs")),
-        ledger_path=pathlib.Path(raw.get("ledger_path", "runs/ledger.json")),
+        deck_path=pathlib.Path(raw.get("deck_path", constants.DEFAULT_DECK_PATH)),
+        output_root=pathlib.Path(raw.get("output_root", constants.DEFAULT_OUTPUT_DIR)),
+        ledger_path=pathlib.Path(raw.get("ledger_path", constants.DEFAULT_LEDGER_PATH)),
         flow_executable=raw.get("flow_executable", "flow"),
         extra_mounts=list(raw.get("extra_mounts", [])),
         wells=tuple(raw.get("wells", constants.PRODUCER_WELLS)),
@@ -202,7 +199,9 @@ def load(config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> ProjectCo
     return config
 
 
-def save(config: ProjectConfig, config_path: pathlib.Path | str = DEFAULT_CONFIG_FILENAME) -> None:
+def save(
+    config: ProjectConfig, config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE
+) -> None:
     """Write `config` out as YAML at `config_path`.
 
     Path fields are written exactly as stored on `config`, not

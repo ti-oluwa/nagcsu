@@ -6,6 +6,7 @@ the CLI, since a future deck revision may add or rename wells, or the
 team may want to test a different objective weighting.
 """
 
+import pathlib
 import typing
 
 PRODUCER_WELLS: typing.Final[tuple[str, ...]] = (
@@ -59,3 +60,14 @@ group at a time in this order and only moves on to a later group once
 earlier groups stop reducing the objective, so a run that improves the
 fit can always be attributed to a single change.
 """
+
+DEFAULT_DECK_PATH = pathlib.Path("Data/NigerDelta UGH1 Composite Field.DATA")
+
+DEFAULT_HISTORY_PATH = pathlib.Path("Data/Monthly Production Data.xlsx")
+
+DEFAULT_OUTPUT_DIR = pathlib.Path("runs")
+
+DEFAULT_LEDGER_PATH = DEFAULT_OUTPUT_DIR / "ledger.json"
+
+DEFAULT_CONFIG_FILE: typing.Final[str] = "nagcsu.yaml"
+"""Filename a bare `nagcsu <command>` looks for in the current directory."""

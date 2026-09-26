@@ -11,10 +11,8 @@ import typing
 
 EvaluateFunction = typing.Callable[[dict[str, float]], float]
 """A function that takes a full parameter state and returns J for it.
-Expected to be built by the caller around
-`nagcsu.parameters.apply_state`,
-`nagcsu.simulate.run`, `nagcsu.summary.load_summary` and
-`nagcsu.objective.score`.
+Expected to be built by the caller around `nagcsu.parameters.apply_state`,
+`nagcsu.simulate.run`, `nagcsu.summary.load_summary` and `nagcsu.objective.score`.
 """
 
 

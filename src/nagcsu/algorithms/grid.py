@@ -10,7 +10,8 @@ import itertools
 from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of
 
 MAX_EVALUATIONS_DEFAULT = 500
-"""Refuse to run a grid larger than this unless the caller raises
+"""
+Refuse to run a grid larger than this unless the caller raises
 `max_evaluations` explicitly. A 5-parameter, 5-value-each grid is
 already 3125 simulation runs; this catches that mistake before it burns
 an afternoon of compute.

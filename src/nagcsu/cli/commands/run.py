@@ -37,7 +37,11 @@ def run(
     resolved_run_id = run_id or ledger.new_run_id(records)
 
     outcome = pipeline.execute_run(
-        project_config, base_deck, state, run_id=resolved_run_id, score=not no_score
+        project_config,
+        base_deck,
+        state,
+        run_id=resolved_run_id,
+        score=not no_score,
     )
     record = pipeline.to_run_record(outcome, group=None, strategy=None, note=note)
     ledger.append(ledger_path, record)

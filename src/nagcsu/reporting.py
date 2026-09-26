@@ -123,9 +123,7 @@ def render_run_report(
 
 
 def write_run_report(
-    record: ledger.RunRecord,
-    output_path: pathlib.Path | str,
-    **kwargs: typing.Any,
+    record: ledger.RunRecord, output_path: pathlib.Path | str, **kwargs: typing.Any
 ) -> pathlib.Path:
     """Render and write a run report; see `render_run_report` for `kwargs`."""
     output_path = pathlib.Path(output_path)

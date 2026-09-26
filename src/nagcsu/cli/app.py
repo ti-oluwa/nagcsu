@@ -9,7 +9,7 @@ import pathlib
 
 import click
 
-from nagcsu import __version__
+from nagcsu import __version__, constants
 from nagcsu.cli.commands.init import init
 from nagcsu.cli.commands.match import match
 from nagcsu.cli.commands.report import report
@@ -22,7 +22,7 @@ from nagcsu.cli.commands.sensitivity import sensitivity_
 @click.option(
     "--config",
     "config_path",
-    default="nagcsu.yaml",
+    default=constants.DEFAULT_CONFIG_FILE,
     show_default=True,
     help="Path to the project config. Create one with `nagcsu init`.",
 )

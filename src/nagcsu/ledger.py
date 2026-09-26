@@ -14,7 +14,8 @@ import pathlib
 import typing
 
 LEDGER_SCHEMA_VERSION: typing.Final[int] = 1
-"""Bumped whenever `RunRecord`'s shape changes in a way that is not
+"""
+Bumped whenever `RunRecord`'s shape changes in a way that is not
 backward compatible with an older ledger file on disk.
 """
 

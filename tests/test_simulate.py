@@ -43,6 +43,20 @@ def test_format_extra_mounts_env_uses_colons_elsewhere() -> None:
     assert result == "/data/shared:/data/pvt=/mnt/pvt"
 
 
+def test_text_output_io_close_leaves_destinations_open() -> None:
+    destination = simulate.io.StringIO()
+    output = simulate.TextOutputIO([destination])
+    output.write("captured")
+
+    output.close()
+
+    assert output.closed
+    assert destination.getvalue() == "captured"
+    assert not destination.closed
+    with pytest.raises(ValueError, match="closed file"):
+        output.write("after close")
+
+
 @pytest.fixture
 def fake_flow_executable(tmp_path) -> pathlib.Path:
     """An executable script standing in for `flow`: reports its cwd,
@@ -54,6 +68,7 @@ def fake_flow_executable(tmp_path) -> pathlib.Path:
         "#!/usr/bin/env python3\n"
         "import os, sys, pathlib\n"
         "print('CWD:' + os.getcwd())\n"
+        "print('FLOW STDERR', file=sys.stderr)\n"
         "print('ARGS:' + '|'.join(sys.argv[1:]))\n"
         "print('MOUNTS:' + os.environ.get('OPM_FLOW_EXTRA_MOUNTS', '<unset>'))\n"
         "for arg in sys.argv[1:]:\n"
@@ -102,3 +117,19 @@ def test_run_omits_extra_mounts_env_when_none_given(
     result = simulate.run(deck_path, output_dir, flow_executable=str(fake_flow_executable))
 
     assert "MOUNTS:<unset>" in result.stdout
+
+
+def test_run_captures_and_forwards_both_output_streams(
+    tmp_path, fake_flow_executable: pathlib.Path, capsys
+) -> None:
+    deck_path = tmp_path / "deck.DATA"
+    deck_path.write_text("dummy deck")
+    output_dir = tmp_path / "runs" / "run_0001"
+
+    result = simulate.run(deck_path, output_dir, flow_executable=str(fake_flow_executable))
+    console_output = capsys.readouterr()
+
+    assert "CWD:" in result.stdout
+    assert "FLOW STDERR" in result.stderr
+    assert "CWD:" in console_output.out
+    assert "FLOW STDERR" in console_output.err
