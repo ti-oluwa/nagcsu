@@ -55,7 +55,7 @@ class ObjectiveResult:
     """Weights actually used for this result, echoed back for the run record."""
 
 
-def nrmse(
+def compute_nrmse(
     simulated: npt.NDArray[np.float64] | pandas.Series,
     observed: npt.NDArray[np.float64] | pandas.Series,
 ) -> float:
@@ -80,7 +80,7 @@ def score(
     weights: dict[str, float],
     date_column: str = "DATE",
 ) -> ObjectiveResult:
-    """Compute the combined objective J between a simulated and observed frame.
+    """Compute the combined objective `J` between a simulated and observed frame.
 
     Both frames must have a date column matching `date_column` without
     regard to letter case, plus one column per entry in
@@ -132,7 +132,7 @@ def score(
     vector_scores: dict[str, VectorScore] = {}
     weighted_total = 0.0
     for name, vector in SCORED_FIELD_VECTORS.items():
-        vector_score = nrmse(merged[f"{vector}_sim"], merged[f"{vector}_obs"])
+        vector_score = compute_nrmse(merged[f"{vector}_sim"], merged[f"{vector}_obs"])
         vector_scores[name] = VectorScore(name=name, nrmse=vector_score, point_count=len(merged))
         weighted_total += weights.get(name, 0.0) * vector_score
 

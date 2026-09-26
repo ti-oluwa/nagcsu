@@ -6,10 +6,6 @@ already-edited one, so a run's exact deck is always reproducible from
 its logged parameter state alone (see `apply_state`). This
 sidesteps the drift risk of applying the same multiplicative edit twice
 by accident.
-
-Parameter groups and their tuning order follow Stage D.1 of the Phase 2
-Execution Plan: change one group, rerun, rescore, and only move to the
-next group once the current one stops helping (Stage D.3).
 """
 
 import dataclasses
@@ -269,9 +265,9 @@ def apply_permeability_multiplier(deck: Deck, state: dict[str, float]) -> Deck:
     delta = state["permeability.areal_contrast"]
     high, low = 1.0 + delta, 1.0 - delta
 
-    def patch_side(deck_in: Deck, property_name: str, box: str, value: float) -> Deck:
+    def patch_side(deck: Deck, property_name: str, box: str, value: float) -> Deck:
         pattern = rf"('{property_name}'\s+){NUMBER_PATTERN}(\s+{box}\s+1\s+30\s+1\s+5\s*/)"
-        return deck_in.replace_once(pattern, rf"\g<1>{value:.4f}\g<2>")
+        return deck.replace_once(pattern, rf"\g<1>{value:.4f}\g<2>")
 
     deck = patch_side(deck, "PERMX", r"1\s+10", high)
     deck = patch_side(deck, "PERMX", r"21\s+30", low)

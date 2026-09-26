@@ -1,16 +1,4 @@
-"""Corey-model relative permeability formulas.
-
-The UGH-1 deck's SGOF and SWOF tables were built from these formulas
-(see the Dataset Documentation and the comments above each table in the
-`.DATA` file), so tuning the endpoints or exponents Stage D.1 names
-means regenerating the affected table's Krg/Krow or Krw/Krow columns
-from these formulas rather than editing table rows by hand.
-
-Every formula here has been checked against the anchor values printed
-in the deck's SGOF/SWOF comments (Sgc=0.04, krg_max=0.77, ng=3.0,
-Swc=0.13, Sorw=0.12, krw_max=0.78, nw=3.8, kro_max=0.80, no=4.0,
-Sorg=0.15) and reproduces the shipped table to within rounding.
-"""
+"""Corey-model relative permeability formulas."""
 
 import numpy as np
 import numpy.typing as npt

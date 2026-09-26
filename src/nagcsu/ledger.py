@@ -1,11 +1,4 @@
-"""A JSON-backed record of every run a project has made.
-
-Every `nagcsu run` and `nagcsu match` invocation appends one
-`RunRecord` here. It is what makes `nagcsu report` and
-`nagcsu match auto`'s stopping logic possible without re-reading every
-run directory's `.PRT` and summary output on every invocation, and it is
-the "how it was gotten" record a snapshot report is built from.
-"""
+"""A JSON-backed record of every run a project has made."""
 
 import dataclasses
 import datetime
@@ -102,7 +95,7 @@ def new_run_id(existing: list[RunRecord]) -> str:
     return f"run_{len(existing):04d}"
 
 
-def best_record(records: list[RunRecord]) -> RunRecord | None:
+def get_best_record(records: list[RunRecord]) -> RunRecord | None:
     """Return the scored record with the lowest `j`, or `None` if none is scored."""
     scored = [record for record in records if record.j is not None]
     if not scored:

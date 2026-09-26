@@ -44,10 +44,10 @@ def test_best_record_ignores_unscored_runs(tmp_path) -> None:
         get_run_record("run_0001", j=0.25),
         get_run_record("run_0002", j=0.10),
     ]
-    best = ledger.best_record(records)
+    best = ledger.get_best_record(records)
     assert best is not None
     assert best.run_id == "run_0002"
 
 
 def test_best_record_returns_none_when_nothing_is_scored() -> None:
-    assert ledger.best_record([get_run_record("run_0000", j=None)]) is None
+    assert ledger.get_best_record([get_run_record("run_0000", j=None)]) is None

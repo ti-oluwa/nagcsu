@@ -1,9 +1,4 @@
-"""Shared plumbing every `nagcsu` subcommand uses.
-
-Not part of the public API. Every CLI module in this package imports
-from here to load the project config once per invocation and to parse
-the repeated `--param NAME=VALUE` option the same way everywhere.
-"""
+"""Shared plumbing every `nagcsu` subcommand uses."""
 
 import click
 

@@ -1,20 +1,4 @@
-"""Auto-tuning: one parameter group at a time, in priority order.
-
-Implements Stage D.1 and D.3 of the Phase 2 Execution Plan directly:
-groups are tuned in the priority order the plan gives (aquifer, then
-permeability multiplier, then SGOF shape, and so on), one parameter
-within the current group at a time, so an improvement or a regression
-can always be attributed to a single change. Tuning stops the moment J
-reaches the target, exactly as Stage C.4 and D.5 recommend, whether that
-happens partway through the first group or only after the last one.
-
-Each parameter is optimized with `scipy.optimize.minimize_scalar`'s
-bounded method, holding every other parameter fixed at the best state
-found so far. This is a coordinate descent, not a global optimizer: it
-will not escape a bad starting region on its own, which is exactly why
-the priority order matters and why this should be run from the deck's
-shipped defaults rather than an arbitrary starting point.
-"""
+"""Auto-tuning: one parameter group at a time, in priority order."""
 
 import dataclasses
 

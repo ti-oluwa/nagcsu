@@ -1,11 +1,4 @@
-"""Writing a human-readable summary of a run or a tuning session.
-
-This is the "generate a summary file on how it was gotten" piece: given
-a run record (or a whole `nagcsu match auto` session's records), produce
-one Markdown file documenting the final parameter state, how J got
-there, and what to look at next, in roughly the shape Stage E.2 of the
-Execution Plan's methods-section template asks for.
-"""
+"""Writing a human-readable summary of a run or a tuning session."""
 
 import pathlib
 import typing

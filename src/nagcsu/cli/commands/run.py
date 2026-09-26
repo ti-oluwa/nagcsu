@@ -43,7 +43,7 @@ def run(
         run_id=resolved_run_id,
         score=not no_score,
     )
-    record = pipeline.to_run_record(outcome, group=None, strategy=None, note=note)
+    record = pipeline.build_run_record(outcome, group=None, strategy=None, note=note)
     ledger.append(ledger_path, record)
 
     context.echo_outcome_header(record)

@@ -1,11 +1,4 @@
-"""Reading OPM Flow summary output into a tidy scoring frame.
-
-Uses res2df rather than reading `resfo`'s raw keyword/array pairs
-directly, since `res2df.summary.df` already does the report-step to
-tidy-DataFrame work Stage B.1 of the Execution Plan describes doing by
-hand. `resfo` is still useful directly for a quick existence/shape check
-without paying res2df's parsing cost; see `peek_vectors`.
-"""
+"""Reading OPM Flow summary output into a tidy scoring frame."""
 
 import pathlib
 

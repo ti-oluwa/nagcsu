@@ -1,10 +1,4 @@
-"""Shared types every search strategy module builds on.
-
-`Trial`, `SearchResult` and `EvaluateFunction` are the common currency
-between `nagcsu.algorithms.grid`, `random_search`, `coordinate_descent`
-and `sensitivity`: each strategy takes an `EvaluateFunction` and returns
-a `SearchResult`, without needing to know how the other strategies work.
-"""
+"""Shared types every search strategy module builds on."""
 
 import dataclasses
 import typing

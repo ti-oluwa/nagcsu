@@ -1,14 +1,8 @@
-"""Exception types raised across the nagcsu package.
-
-Catching `NagcsuError` from calling code catches everything this
-package raises deliberately; the more specific subclasses let a caller
-distinguish a bad deck edit from a failed simulation from a scoring
-problem without parsing error strings.
-"""
+"""Exception types raised across the `nagcsu` package."""
 
 
 class NagcsuError(Exception):
-    """Base class for every exception raised deliberately by nagcsu."""
+    """Base class for every exception raised deliberately by `nagcsu`."""
 
 
 class DeckPatchError(NagcsuError):
@@ -24,8 +18,8 @@ class DeckPatchError(NagcsuError):
 class SimulationError(NagcsuError):
     """An OPM Flow run failed to launch or exited with a nonzero status.
 
-    Raised by `nagcsu.simulate`. The wrapped :attr:`stderr` and
-    :attr:`returncode` are attached so a caller can print or log the
+    Raised by `nagcsu.simulate`. The wrapped `stderr` and
+    `returncode` are attached so a caller can print or log the
     underlying OPM Flow diagnostics without re-reading the run directory.
     """
 

@@ -34,7 +34,7 @@ def list_(ctx: click.Context, limit: int) -> None:
             f"{record.run_id:<20}{(record.group or '-'):<24}{(record.strategy or '-'):<20}{j_text:>10}  {record.note}"
         )
 
-    best = ledger.best_record(records)
+    best = ledger.get_best_record(records)
     if best:
         click.echo(f"\nBest so far: {best.run_id} (J={best.j:.4f})")
 
@@ -78,7 +78,7 @@ def resolve_run_id(records: list[ledger.RunRecord], run_id: str) -> ledger.RunRe
     if run_id == "latest":
         return records[-1]
     if run_id == "best":
-        best = ledger.best_record(records)
+        best = ledger.get_best_record(records)
         if best is None:
             raise click.ClickException("No scored runs logged yet, so there is no best run.")
         return best

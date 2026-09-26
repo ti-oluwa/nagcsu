@@ -18,22 +18,22 @@ def get_frame(pressure, watercut, gor):
 
 def test_nrmse_zero_for_identical_series() -> None:
     series = [2700, 2650, 2600, 2550]
-    assert objective.nrmse(series, series) == pytest.approx(0.0)
+    assert objective.compute_nrmse(series, series) == pytest.approx(0.0)
 
 
 def test_nrmse_scales_with_offset_over_range() -> None:
     observed = [2500, 2600, 2700, 2800]  # range = 300
     simulated = [2510, 2610, 2710, 2810]  # constant +10 offset
-    assert objective.nrmse(simulated, observed) == pytest.approx(10 / 300, abs=1e-9)
+    assert objective.compute_nrmse(simulated, observed) == pytest.approx(10 / 300, abs=1e-9)
 
 
 def test_nrmse_falls_back_to_raw_rmse_for_zero_range_observed() -> None:
     observed = [2700, 2700, 2700]
     simulated = [2705, 2705, 2705]
-    assert objective.nrmse(simulated, observed) == pytest.approx(5.0)
+    assert objective.compute_nrmse(simulated, observed) == pytest.approx(5.0)
 
 
-def test_score_combines_weighted_nrmse() -> None:
+def test_score_combines_weighted_compute_nrmse() -> None:
     simulated = get_frame([2710, 2660, 2610, 2560], [0.10, 0.15, 0.20, 0.25], [820, 830, 840, 850])
     observed = get_frame([2700, 2650, 2600, 2550], [0.10, 0.15, 0.20, 0.25], [820, 830, 840, 850])
 

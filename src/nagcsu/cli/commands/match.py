@@ -63,7 +63,7 @@ def sweep(ctx: click.Context, param_name: str, values: str, group_label: str | N
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
-        record = pipeline.to_run_record(
+        record = pipeline.build_run_record(
             outcome,
             group=group_label or parameters.PARAMETERS[param_name].group,
             strategy="sweep",
@@ -107,7 +107,7 @@ def random_command(
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
-        record = pipeline.to_run_record(
+        record = pipeline.build_run_record(
             outcome,
             group=None,
             strategy="random",
@@ -187,7 +187,7 @@ def auto(
         nonlocal failed_trial_count
         if outcome.simulation_error:
             failed_trial_count += 1
-        record = pipeline.to_run_record(
+        record = pipeline.build_run_record(
             outcome, group=None, strategy="coordinate_descent", note="auto-tune trial"
         )
         ledger.append(ledger_path, record)
@@ -219,7 +219,7 @@ def auto(
     final_outcome = pipeline.execute_run(
         project_config, base_deck, result.best.state, run_id=final_run_id, score=True
     )
-    final_record = pipeline.to_run_record(
+    final_record = pipeline.build_run_record(
         final_outcome,
         group=groups_in_order[-1] if groups_in_order else None,
         strategy="coordinate_descent",

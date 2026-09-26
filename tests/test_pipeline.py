@@ -71,7 +71,7 @@ def test_to_run_record_carries_simulation_error_through(
     monkeypatch.setattr(pipeline.simulate, "run", fake_run)
 
     outcome = pipeline.execute_run(project_config, sample_deck, {}, run_id="run_fail")
-    record = pipeline.to_run_record(outcome, group=None, strategy=None, note="")
+    record = pipeline.build_run_record(outcome, group=None, strategy=None, note="")
 
     assert record.simulation_error == "boom"
     assert record.j is None

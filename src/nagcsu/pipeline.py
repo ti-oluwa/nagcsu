@@ -1,11 +1,4 @@
-"""Wiring one run together: patch the deck, simulate, parse, score.
-
-Every CLI command that needs to turn a parameter state into a J value,
-whether that is `nagcsu run` doing it once or `nagcsu match auto` doing
-it hundreds of times through `nagcsu.algorithms`, goes through
-`execute_run` so the deck-patch-simulate-score sequence is only
-written once.
-"""
+"""API orchestrating one run together. Patch the deck, simulate, parse, score."""
 
 import dataclasses
 import itertools
@@ -176,7 +169,7 @@ def make_evaluate(
     return evaluate
 
 
-def to_run_record(
+def build_run_record(
     outcome: RunOutcome, *, group: str | None, strategy: str | None, note: str
 ) -> ledger.RunRecord:
     """Build a `ledger.RunRecord` from a `RunOutcome`.

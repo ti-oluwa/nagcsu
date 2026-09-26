@@ -4,9 +4,7 @@ A lightweight substitute for a full Morris or Sobol sensitivity design.
 Each parameter is nudged up and down by a fraction of its bound range
 around a base state, holding every other parameter fixed, and the
 resulting swing in J is used to rank parameters by how much tuning
-attention they are likely to reward. This is what
-`nagcsu sensitivity run` reports, and what a `nagcsu match auto` summary
-points to when suggesting what to try next after stopping.
+attention they are likely to reward.
 """
 
 import dataclasses

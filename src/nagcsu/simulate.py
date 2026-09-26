@@ -1,27 +1,4 @@
-"""Running OPM Flow and locating the summary files it wrote.
-
-OPM Flow does not necessarily write its output under the same basename
-as the input `.DATA` file: a run in this project's `Data/` folder shows
-Flow folding the case name to upper case when it differs from the input
-filename's own case ("NigerDelta UGH1 Composite Field.DATA" produced
-"NIGERDELTA UGH1 COMPOSITE FIELD.PRT/.UNSMRY/.SMSPEC"). Rather than
-guess at that transform, `find_case_basename` globs the output
-directory for whatever `.UNSMRY` file actually appeared.
-
-A second, easy-to-miss gotcha: on many installs `flow` is not the real
-OPM Flow binary at all, but a wrapper script that runs it inside a
-Docker container, mounting only the *current working directory* into
-that container (see the opmflow-setup-guide installer, which is what
-this module's `cwd`/relative-path handling below is written against).
-A subprocess invocation that passes an absolute path outside whatever
-directory the wrapper happens to run from, or that does not set the
-subprocess's own working directory at all, can silently fail to find
-files that genuinely exist on disk, since the container simply cannot
-see them. `run()` always launches `flow` from the common parent
-directory of `deck_path` and `output_dir`, and passes both as paths
-relative to that directory, so this works whether `flow` is a native
-binary or a Docker-wrapped one, on every platform.
-"""
+"""Running OPM Flow and locating the summary files it wrote."""
 
 import dataclasses
 import io

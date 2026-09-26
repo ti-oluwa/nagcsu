@@ -1,13 +1,4 @@
-"""Reading and safely patching an OPM Flow `.DATA` deck as text.
-
-The UGH-1 deck is a single monolithic file rather than a base deck plus
-`INCLUDE` files, so every patch here operates directly on the deck text
-and returns a new `Deck`. Every patch is refused rather than
-guessed at if its target pattern does not match exactly once, since a
-silent wrong-occurrence match (the exact failure mode Stage D.5 of the
-Execution Plan warns about for hand-edited `INCLUDE` files) is far worse
-than a loud error.
-"""
+"""Reading and safely patching an OPM Flow `.DATA` deck as text."""
 
 import dataclasses
 import pathlib

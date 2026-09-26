@@ -1,9 +1,8 @@
 """Shared constants for the UGH-1 composite sector model.
 
-These are defaults, not hard requirements: every value here can be
+These are defaults, not hard requirements as every value here can be
 overridden from a project config file (see `nagcsu.config`) or from
-the CLI, since a future deck revision may add or rename wells, or the
-team may want to test a different objective weighting.
+the CLI.
 """
 
 import pathlib

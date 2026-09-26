@@ -1,17 +1,4 @@
-"""Parsing an OPM Flow `.PRT` file for run health.
-
-Stage A of the Phase 2 Execution Plan describes a material-balance-error
-grep that assumes an ECLIPSE-style "MATERIAL BALANCE" line. OPM Flow
-2026.04 does not print one; a real baseline `.PRT` from this project
-instead ends with an `Error summary:` block (Warnings/Info/Errors/Bugs/
-Problems counts) and an `Overall Newton Iterations` block reporting how
-much solver work was wasted on retried timesteps, and marks failed well
-convergence per report step as
-`Warning: Inner well iterations failed for well <NAME> Treat the well
-as unconverged.` paired with a preceding `Problem: [...] Error when
-inverting local well equations for well <NAME>` line. This module is
-built against that real format rather than the plan's placeholder one.
-"""
+"""Parsing an OPM Flow `.PRT` file for run health."""
 
 import dataclasses
 import pathlib

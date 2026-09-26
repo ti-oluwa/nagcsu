@@ -1,9 +1,4 @@
-"""Grid search: evaluate every combination of a set of parameter values.
-
-The direct equivalent of Stage D.4's `sweep()` helper in the Execution
-Plan, generalized from one parameter to any number, with a hard cap on
-how many combinations it will silently run.
-"""
+"""Grid search: evaluate every combination of a set of parameter values."""
 
 import itertools
 

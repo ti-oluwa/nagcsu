@@ -23,3 +23,4 @@ benchmarks/runs
 *.patch
 *.yaml
 runs/
+*.~lock*

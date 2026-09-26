@@ -49,7 +49,7 @@ def run(ctx: click.Context, group_name: str | None, perturbation_fraction: float
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
-        record = pipeline.to_run_record(
+        record = pipeline.build_run_record(
             outcome, group=group_name, strategy="sensitivity", note="sensitivity probe"
         )
         ledger.append(ledger_path, record)
