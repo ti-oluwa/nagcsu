@@ -92,6 +92,8 @@ def score(
         share no common dates, or if a required column is missing from
         either frame.
     """
+    print(simulated.head())
+    print(observed.head())
     missing_columns = [
         column
         for column in (date_column, *SCORED_FIELD_VECTORS.values())

@@ -32,7 +32,7 @@ def run(
     project_config, base_deck = context.load(ctx)
     state = context.parse_param_options(param_pairs)
 
-    ledger_path = project_config.resolved_path(project_config.ledger_path)
+    ledger_path = project_config.get_resolved_path(project_config.ledger_path)
     records = ledger.load(ledger_path)
     resolved_run_id = run_id or ledger.new_run_id(records)
 

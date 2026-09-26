@@ -71,3 +71,5 @@ DEFAULT_LEDGER_PATH = DEFAULT_OUTPUT_DIR / "ledger.json"
 
 DEFAULT_CONFIG_FILE: typing.Final[str] = "nagcsu.yaml"
 """Filename a bare `nagcsu <command>` looks for in the current directory."""
+
+DEFAULT_ROOT_DIR = pathlib.Path(".")

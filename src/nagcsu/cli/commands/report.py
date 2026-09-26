@@ -17,7 +17,7 @@ def report() -> None:
 def list_(ctx: click.Context, limit: int) -> None:
     """List the most recent logged runs, best-scored first within each group."""
     project_config, _ = context.load(ctx)
-    records = ledger.load(project_config.resolved_path(project_config.ledger_path))
+    records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
     if not records:
         click.echo("No runs logged yet. Try `nagcsu run` first.")
         return
@@ -55,13 +55,13 @@ def show(ctx: click.Context, run_id: str, output_path: str | None) -> None:
     for the lowest-J run so far, or an explicit run ID such as `run_0003`.
     """
     project_config, _ = context.load(ctx)
-    records = ledger.load(project_config.resolved_path(project_config.ledger_path))
+    records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
     if not records:
         raise click.ClickException("No runs logged yet.")
 
     record = resolve_run_id(records, run_id)
     prt_report = None
-    prt_path = project_config.resolved_path(project_config.output_root) / record.run_id
+    prt_path = project_config.get_resolved_path(project_config.output_root) / record.run_id
     matching_prt_files = list(prt_path.glob("*.PRT"))
     if matching_prt_files:
         prt_report = prt.parse(matching_prt_files[0])

@@ -34,14 +34,14 @@ def test_validate_rejects_weights_not_summing_to_one() -> None:
 
 def test_resolved_path_joins_relative_paths_onto_root(tmp_path) -> None:
     project_config = config.ProjectConfig(root=tmp_path)
-    resolved = project_config.resolved_path(pathlib.Path("Data/deck.DATA"))
+    resolved = project_config.get_resolved_path(pathlib.Path("Data/deck.DATA"))
     assert resolved == (tmp_path / "Data/deck.DATA").resolve()
 
 
 def test_resolved_path_leaves_absolute_paths_unchanged(tmp_path) -> None:
     project_config = config.ProjectConfig(root=tmp_path)
     absolute = tmp_path.resolve() / "elsewhere" / "deck.DATA"
-    assert project_config.resolved_path(absolute) == absolute
+    assert project_config.get_resolved_path(absolute) == absolute
 
 
 def test_save_and_load_round_trips_extra_mounts_and_history_fields(tmp_path) -> None:

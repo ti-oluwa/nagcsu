@@ -46,7 +46,7 @@ def run(ctx: click.Context, group_name: str | None, perturbation_fraction: float
     )
     bounds_by_parameter = {spec.name: spec.bounds for spec in specs}
 
-    ledger_path = project_config.resolved_path(project_config.ledger_path)
+    ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
         record = pipeline.to_run_record(

@@ -115,13 +115,13 @@ class ProjectConfig:
     history: HistoryConfig = dataclasses.field(default_factory=HistoryConfig)
     """Observed history location and column mapping."""
 
-    root: pathlib.Path = pathlib.Path(".")
+    root: pathlib.Path = constants.DEFAULT_ROOT_DIR
     """Directory the config file was loaded from. Relative paths in every
     other field are resolved against this when `resolved_path` is
     called, so the project can be run from any working directory.
     """
 
-    def resolved_path(self, path: pathlib.Path) -> pathlib.Path:
+    def get_resolved_path(self, path: pathlib.Path) -> pathlib.Path:
         """Return `path` resolved against this project's root directory.
 
         Absolute paths are returned unchanged; relative paths are joined

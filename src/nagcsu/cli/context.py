@@ -24,7 +24,7 @@ def load(ctx: click.Context) -> tuple[config_module.ProjectConfig, Deck]:
     except (FileNotFoundError, ValueError) as error:
         raise click.ClickException(str(error)) from error
 
-    deck_path = project_config.resolved_path(project_config.deck_path)
+    deck_path = project_config.get_resolved_path(project_config.deck_path)
     try:
         base_deck = Deck.load(deck_path)
     except FileNotFoundError as error:

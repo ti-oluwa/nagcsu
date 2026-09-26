@@ -84,7 +84,7 @@ def execute_run(
     resolved_state = parameters.resolve_state(state)
     patched_deck = parameters.apply_state(base_deck, resolved_state)
 
-    output_dir = config.resolved_path(config.output_root) / run_id
+    output_dir = config.get_resolved_path(config.output_root) / run_id
     deck_path = output_dir / base_deck.path.name
     patched_deck.save(deck_path)
 
@@ -113,8 +113,9 @@ def execute_run(
     objective_result = None
     if score and run_result.case_basename is not None:
         simulated_frame = summary.load_summary(run_result.case_basename, wells=list(config.wells))
+        print(dataclasses.asdict(config.history))
         observed_frame = history.load_observed_history(
-            config.resolved_path(config.history.path),
+            config.get_resolved_path(config.history.path),
             file_format=config.history.file_format,
             sheet_name=config.history.sheet_name,
             date_column=config.history.date_column,

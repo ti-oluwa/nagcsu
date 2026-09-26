@@ -10,6 +10,14 @@ from nagcsu import constants, history
 
 @click.command(name="init")
 @click.option(
+    "--root",
+    "root_path",
+    type=click.Path(path_type=pathlib.Path, file_okay=False),
+    default=constants.DEFAULT_ROOT_DIR,
+    show_default=True,
+    help="Project root directory; the config is written here.",
+)
+@click.option(
     "--deck",
     "deck_path",
     default=constants.DEFAULT_DECK_PATH,
@@ -30,24 +38,34 @@ from nagcsu import constants, history
     help="Name or path of the OPM Flow executable.",
 )
 @click.pass_context
-def init(ctx: click.Context, deck_path: str, history_path: str, flow_executable: str) -> None:
-    """Create a `nagcsu.yaml` project config in the current directory.
+def init(
+    ctx: click.Context,
+    root_path: pathlib.Path,
+    deck_path: str,
+    history_path: str,
+    flow_executable: str,
+) -> None:
+    """Create a `nagcsu.yaml` project config in the project root.
 
-    Safe to run from the repository root with the defaults, which point
+    Safe to run in the repository root with the defaults, which point
     at the deck and history file already in `Data/`. If the history
     file already exists at this path, its header row is peeked at to
     guess the right `date_column` and (for a long-format, one-row-per-
     well-per-date file) `well_column`, rather than assuming `DATE`;
     both can still be overridden by hand in `nagcsu.yaml` afterwards.
     """
-    config_path: pathlib.Path = ctx.obj["config_path"]
+    root_path = root_path.resolve()
+    root_path.mkdir(parents=True, exist_ok=True)
+    configured_path: pathlib.Path = ctx.obj["config_path"]
+    config_path = configured_path if configured_path.is_absolute() else root_path / configured_path
     if config_path.exists():
         raise click.ClickException(
             f"{config_path} already exists; delete it first or pass --config to write elsewhere"
         )
 
     history_config = config_module.HistoryConfig(path=pathlib.Path(history_path))
-    resolved_history_path = (pathlib.Path(".").resolve() / history_path).resolve()
+    project_root = config_path.resolve().parent
+    resolved_history_path = (project_root / history_path).resolve()
     if resolved_history_path.exists():
         try:
             columns = history.peek_columns(resolved_history_path)
@@ -65,7 +83,7 @@ def init(ctx: click.Context, deck_path: str, history_path: str, flow_executable:
         deck_path=pathlib.Path(deck_path),
         flow_executable=flow_executable,
         history=history_config,
-        root=pathlib.Path(".").resolve(),
+        root=project_root,
     )
     config_module.save(project_config, config_path)
     click.echo(f"Wrote {config_path}")
@@ -77,7 +95,7 @@ def init(ctx: click.Context, deck_path: str, history_path: str, flow_executable:
                 if history_config.well_column
                 else ""
             )
-            + " from the file's headers; check nagcsu.yaml if that looks wrong."
+            + f" from the file's headers; check {config_path} if that looks wrong."
         )
     click.echo(
         "Run `nagcsu run` to try a baseline simulation, or `nagcsu match --help` to start tuning."

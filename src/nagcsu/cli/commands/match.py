@@ -60,7 +60,7 @@ def sweep(ctx: click.Context, param_name: str, values: str, group_label: str | N
     project_config, base_deck = context.load(ctx)
     parsed_values = [float(value) for value in values.split(",")]
 
-    ledger_path = project_config.resolved_path(project_config.ledger_path)
+    ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
         record = pipeline.to_run_record(
@@ -104,7 +104,7 @@ def random_command(
     project_config, base_deck = context.load(ctx)
     bounds_by_parameter = {name: parameters.PARAMETERS[name].bounds for name in param_names}
 
-    ledger_path = project_config.resolved_path(project_config.ledger_path)
+    ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
         record = pipeline.to_run_record(
@@ -180,7 +180,7 @@ def auto(
         for group in groups_in_order
     }
 
-    ledger_path = project_config.resolved_path(project_config.ledger_path)
+    ledger_path = project_config.get_resolved_path(project_config.ledger_path)
     failed_trial_count = 0
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
