@@ -1,9 +1,9 @@
 """Checking a run's initial fluid saturation against the static model's own expectations.
 
 This module reads the very first `SWAT` array written to a run's
-`.UNRST` file, the pre-production, EQUIL-derived state before any
+`.UNRST` file, the pre-production, `EQUIL`-derived state before any
 `DATES` step, and compares it against the deck's own connate water
-saturation (Swc, the first row of its SWOF table), so a bad EQUIL
+saturation (Swc, the first row of its SWOF table), so a bad `EQUIL`
 contact depth, PVT/density input, or capillary-pressure table is caught
 in seconds instead of after dozens of expensive history-match trials.
 """
@@ -53,7 +53,7 @@ class InitialSaturationReport:
         `False` means the model has already started at or near residual
         oil saturation before a single day of production, something no
         dynamic history-match parameter (aquifer, relperm shape, and so
-        on) can fix; the static model itself (EQUIL contact depths, the
+        on) can fix; the static model itself (`EQUIL` contact depths, the
         density/PVT inputs behind the capillary-gravity balance, or the
         SWOF `Pcow` column) needs to change instead.
         """

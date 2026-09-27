@@ -120,3 +120,74 @@ def test_execute_run_scores_a_successful_simulation(
     assert outcome.simulation_error is None
     assert outcome.objective_result is not None
     assert outcome.objective_result.j > 0
+
+
+def test_make_evaluate_with_breakdown_reports_the_j_and_vector_nrmse_make_evaluate_would_hide(
+    monkeypatch, project_config: config.ProjectConfig, sample_deck: Deck
+) -> None:
+    def fake_simulate_run(deck_path, output_dir, *, flow_executable="flow", **kwargs):
+        from nagcsu import simulate
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        case_basename = output_dir / "FAKECASE"
+        (case_basename.with_suffix(".UNSMRY")).write_bytes(b"\x00")
+        return simulate.RunResult(
+            output_dir=output_dir,
+            case_basename=case_basename,
+            returncode=0,
+            stdout="",
+            stderr="",
+            elapsed_seconds=0.01,
+        )
+
+    def fake_load_summary(case_basename, *, wells=None):
+        return pandas.DataFrame(
+            {
+                "DATE": pandas.date_range("1976-01-01", periods=2, freq="YS"),
+                "FPR": [2751.0, 2700.0],
+                "FWCT": [0.0, 0.05],
+                "FGOR": [818.0, 820.0],
+            }
+        )
+
+    def fake_load_observed_history(path, **kwargs):
+        return pandas.DataFrame(
+            {
+                "DATE": pandas.date_range("1976-01-01", periods=2, freq="YS"),
+                "FPR": [2751.0, 2695.0],
+                "FWCT": [0.0, 0.04],
+                "FGOR": [818.0, 819.0],
+            }
+        )
+
+    monkeypatch.setattr(pipeline.simulate, "run", fake_simulate_run)
+    monkeypatch.setattr(pipeline.summary, "load_summary", fake_load_summary)
+    monkeypatch.setattr(pipeline.history, "load_observed_history", fake_load_observed_history)
+
+    seen_outcomes = []
+    evaluate = pipeline.make_evaluate_with_breakdown(
+        project_config, sample_deck, on_outcome=seen_outcomes.append
+    )
+
+    breakdown = evaluate({})
+
+    assert breakdown.j > 0
+    assert set(breakdown.vector_nrmse) == {"pressure", "watercut", "gor"}
+    assert all(value >= 0 for value in breakdown.vector_nrmse.values())
+    assert len(seen_outcomes) == 1
+
+
+def test_make_evaluate_with_breakdown_returns_inf_and_empty_for_a_failed_simulation(
+    monkeypatch, project_config: config.ProjectConfig, sample_deck: Deck
+) -> None:
+    def fake_run(*args, **kwargs):
+        raise SimulationError("boom")
+
+    monkeypatch.setattr(pipeline.simulate, "run", fake_run)
+
+    evaluate = pipeline.make_evaluate_with_breakdown(project_config, sample_deck)
+
+    breakdown = evaluate({"aquifer.radius": 20000.0})
+
+    assert breakdown.j == float("inf")
+    assert breakdown.vector_nrmse == {}

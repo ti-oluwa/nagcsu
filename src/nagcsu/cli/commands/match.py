@@ -1,5 +1,6 @@
 """`nagcsu match`: sweep, random-search or auto-tune the deck's parameters."""
 
+import dataclasses
 import pathlib
 
 import click
@@ -152,6 +153,27 @@ def random_command(
     default=None,
     help="Write a Markdown summary report to this path once tuning stops.",
 )
+@click.option(
+    "--starts",
+    default=1,
+    show_default=True,
+    help=(
+        "Independent coordinate-descent runs, the first from the default state, "
+        "the rest from randomized starting points within bounds; the best is kept. "
+        "Cheap protection against a single run converging to a poor local optimum "
+        "near a threshold-like nonlinearity (see coordinate_descent.multi_start_search)."
+    ),
+)
+@click.option(
+    "--weights",
+    default=None,
+    help=(
+        "Override objective weights for this run only, e.g. 'pressure=1,watercut=0,gor=0' "
+        "to match pressure and water cut first (Phase A) before re-enabling GOR to tune "
+        "SGOF (Phase B). Vectors not listed keep their nagcsu.yaml weight; nagcsu.yaml "
+        "itself is never modified."
+    ),
+)
 @click.pass_context
 def auto(
     ctx: click.Context,
@@ -159,6 +181,8 @@ def auto(
     groups: str | None,
     passes_per_group: int,
     report_path: str | None,
+    starts: int,
+    weights: str | None,
 ) -> None:
     """Auto-tune one parameter group at a time until J reaches its target.
 
@@ -174,6 +198,14 @@ def auto(
     project_config, base_deck = context.load(ctx)
     resolved_target_j = target_j if target_j is not None else project_config.objective.target_j
     groups_in_order = groups.split(",") if groups else list(constants.TUNING_PRIORITY_ORDER)
+
+    if weights:
+        overrides = parse_weight_overrides(weights)
+        merged_weights = {**project_config.objective.weights, **overrides}
+        project_config = dataclasses.replace(
+            project_config,
+            objective=dataclasses.replace(project_config.objective, weights=merged_weights),
+        )
 
     bounds_by_group = {
         group: {spec.name: spec.bounds for spec in parameters.parameters_in_group(group)}
@@ -195,13 +227,14 @@ def auto(
     evaluate = pipeline.make_evaluate(
         project_config, base_deck, run_id_prefix="auto", on_outcome=on_outcome
     )
-    result, outcomes = coordinate_descent.search(
+    result, outcomes = coordinate_descent.multi_start_search(
         parameters.default_state(),
         groups_in_order,
         bounds_by_group,
         evaluate,
         target_j=resolved_target_j,
         passes_per_group=passes_per_group,
+        num_starts=starts,
     )
     context.warn_if_every_trial_failed(result.best.j, command="match auto")
 
@@ -248,6 +281,29 @@ def auto(
             group_outcomes=outcomes,
         )
         click.echo(f"Report: {written}")
+
+
+def parse_weight_overrides(raw: str) -> dict[str, float]:
+    """Parse a `--weights` option value into `{vector_name: weight}`.
+
+    :param raw: Comma-separated `name=value` pairs, for example
+        `"pressure=1,watercut=0,gor=0"`.
+    :raises click.BadParameter: if a pair is malformed or a weight is
+        not a valid float.
+    """
+    overrides: dict[str, float] = {}
+    for pair in raw.split(","):
+        name, _, value = pair.partition("=")
+        name = name.strip()
+        if not name or not value:
+            raise click.BadParameter(
+                f"Malformed weight override {pair!r}; expected 'name=value', e.g. 'gor=0'."
+            )
+        try:
+            overrides[name] = float(value)
+        except ValueError as error:
+            raise click.BadParameter(f"Weight for {name!r} is not a number: {value!r}") from error
+    return overrides
 
 
 def write_parameters_snapshot(state: dict[str, float], path: pathlib.Path) -> None:

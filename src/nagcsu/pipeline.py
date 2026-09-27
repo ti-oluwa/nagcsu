@@ -170,6 +170,64 @@ def make_evaluate(
     return evaluate
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class EvaluationBreakdown:
+    """A trial's combined `J` alongside its per-vector NRMSE.
+
+    For search strategies that need to see more than the combined
+    objective a plain `make_evaluate` callable returns, for example to
+    tell *which* scored vector a state change actually helped or hurt.
+    """
+
+    j: float
+    """Combined weighted objective; the same value a `make_evaluate`
+    callable would return for this state.
+    """
+
+    vector_nrmse: dict[str, float]
+    """Raw NRMSE per scored vector, keyed the same way as
+    `nagcsu.objective.SCORED_FIELD_VECTORS`. This is always the
+    unclipped value, regardless of `config.objective.nrmse_ceiling`.
+    Empty if the run produced no score (see `RunOutcome.objective_result`).
+    """
+
+
+def make_evaluate_with_breakdown(
+    config: ProjectConfig,
+    base_deck: Deck,
+    *,
+    run_id_prefix: str = "eval",
+    on_outcome: typing.Callable[[RunOutcome], None] | None = None,
+) -> typing.Callable[[dict[str, float]], EvaluationBreakdown]:
+    """Like `make_evaluate`, but the callable also reports each vector's own NRMSE.
+
+    Use this instead of `make_evaluate` wherever a caller needs to
+    distinguish which scored vector a parameter change actually moved,
+    rather than only how it moved the combined `J`;
+    `nagcsu.algorithms.sensitivity.run_detailed` is the current caller.
+    See `make_evaluate` for the run-ID and ledger-logging behavior,
+    which this mirrors exactly.
+    """
+    counter = itertools.count()
+
+    def evaluate(state: dict[str, float]) -> EvaluationBreakdown:
+        run_id = f"{run_id_prefix}_{next(counter):05d}"
+        outcome = execute_run(config, base_deck, state, run_id=run_id, score=True)
+        if on_outcome is not None:
+            on_outcome(outcome)
+        if outcome.objective_result is None:
+            return EvaluationBreakdown(j=float("inf"), vector_nrmse={})
+        return EvaluationBreakdown(
+            j=outcome.objective_result.j,
+            vector_nrmse={
+                name: vector_score.nrmse
+                for name, vector_score in outcome.objective_result.vector_scores.items()
+            },
+        )
+
+    return evaluate
+
+
 def build_run_record(
     outcome: RunOutcome, *, group: str | None, strategy: str | None, note: str
 ) -> ledger.RunRecord:

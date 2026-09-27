@@ -65,7 +65,7 @@ def find_case_basename(output_dir: pathlib.Path) -> pathlib.Path | None:
     return matches[0].with_suffix("")
 
 
-def common_working_directory(paths: list[pathlib.Path]) -> pathlib.Path:
+def get_common_working_directory(paths: list[pathlib.Path]) -> pathlib.Path:
     """Return the deepest directory that is an ancestor of every path in `paths`.
 
     Used to pick the `cwd` a Docker-wrapped `flow` is launched from, so
@@ -119,7 +119,7 @@ class TextOutputIO(io.TextIOBase):
         super().close()
 
 
-def forward_output(source: typing.TextIO, destination: TextOutputIO) -> None:
+def forward_io(source: typing.TextIO, destination: TextOutputIO) -> None:
     for line in source:
         destination.write(line)
     destination.flush()
@@ -164,7 +164,7 @@ def run(
     output_dir = pathlib.Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    working_directory = common_working_directory([deck_path, output_dir])
+    working_directory = get_common_working_directory([deck_path, output_dir])
     try:
         deck_arg = str(deck_path.resolve().relative_to(working_directory))
         output_dir_arg = str(output_dir.resolve().relative_to(working_directory))
@@ -183,7 +183,13 @@ def run(
     stderr_output = io.StringIO()
     try:
         process = subprocess.Popen(
-            [flow_executable, deck_arg, f"--output-dir={output_dir_arg}", *(extra_args or [])],
+            [
+                flow_executable,
+                deck_arg,
+                f"--output-dir={output_dir_arg}",
+                "--threads-per-process=32",
+                *(extra_args or []),
+            ],
             cwd=working_directory,
             env=env,
             stdout=subprocess.PIPE,
@@ -200,11 +206,11 @@ def run(
     assert process.stderr is not None
     stdout_output = io.StringIO()
     stdout_thread = threading.Thread(
-        target=forward_output,
+        target=forward_io,
         args=(process.stdout, TextOutputIO([stdout_output, sys.stdout])),
     )
     stderr_thread = threading.Thread(
-        target=forward_output,
+        target=forward_io,
         args=(process.stderr, TextOutputIO([stderr_output, sys.stderr])),
     )
     stdout_thread.start()

@@ -1,6 +1,7 @@
 """Auto-tuning: one parameter group at a time, in priority order."""
 
 import dataclasses
+import random
 
 import scipy.optimize
 
@@ -101,3 +102,77 @@ def search(
         best=best_of(trials),
         strategy="coordinate_descent",
     ), outcomes
+
+
+def multi_start_search(
+    base_state: dict[str, float],
+    groups_in_order: list[str],
+    bounds_by_group: dict[str, dict[str, tuple[float, float]]],
+    evaluate: EvaluateFunction,
+    *,
+    target_j: float,
+    passes_per_group: int = 2,
+    num_starts: int = 1,
+    seed: int | None = None,
+) -> tuple[SearchResult, list[GroupOutcome]]:
+    """Run `search` from several starting states and keep the best.
+
+    Coordinate descent tunes one parameter at a time, holding every
+    other parameter fixed, and `scipy.optimize.minimize_scalar` assumes
+    the objective is roughly unimodal along that one axis. Neither
+    holds up well near a threshold-like nonlinearity, a reservoir's
+    pressure trajectory crossing its bubble point is a concrete example,
+    where a run started on the wrong side of the threshold can converge
+    to a poor local optimum without ever finding the basin containing a
+    much better one, and no amount of retuning from that same starting
+    point escapes it. Re-running `search` from several different,
+    randomly chosen starting states within `bounds_by_group`, and
+    keeping whichever run reached the lowest `J`, is a cheap,
+    dependency-free way to cover more of the parameter space than a
+    single start can, without changing anything about how any one start
+    is itself searched.
+
+    :param num_starts: Number of independent runs of `search`, including
+        the one from `base_state` itself, which always runs first. `1`
+        reproduces `search`'s exact behavior.
+    :param seed: Random seed for the additional starting states, for a
+        reproducible sequence of starts. Unused when `num_starts <= 1`;
+        `base_state` itself is never randomized.
+    :returns: The `SearchResult` and `GroupOutcome` list from whichever
+        start reached the lowest `best.j`, so the return shape and
+        meaning are identical to `search`'s. Every start still runs (and
+        so every trial is still logged, if the caller's `evaluate` logs
+        to the ledger through `on_outcome`); only the winning start's own
+        bookkeeping is returned.
+    """
+    best_result, best_outcomes = search(
+        base_state,
+        groups_in_order,
+        bounds_by_group,
+        evaluate,
+        target_j=target_j,
+        passes_per_group=passes_per_group,
+    )
+
+    rng = random.Random(seed)
+    for _ in range(max(0, num_starts - 1)):
+        if best_result.best.j <= target_j:
+            break
+
+        random_state = dict(base_state)
+        for group_bounds in bounds_by_group.values():
+            for parameter_name, (low, high) in group_bounds.items():
+                random_state[parameter_name] = rng.uniform(low, high)
+
+        result, outcomes = search(
+            random_state,
+            groups_in_order,
+            bounds_by_group,
+            evaluate,
+            target_j=target_j,
+            passes_per_group=passes_per_group,
+        )
+        if result.best.j < best_result.best.j:
+            best_result, best_outcomes = result, outcomes
+
+    return best_result, best_outcomes

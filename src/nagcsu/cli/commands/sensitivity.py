@@ -25,8 +25,21 @@ def sensitivity_() -> None:
     show_default=True,
     help="Fraction of each parameter's bound range to perturb by, each direction.",
 )
+@click.option(
+    "--detailed",
+    is_flag=True,
+    default=False,
+    help=(
+        "Rank by each scored vector's own NRMSE swing, not only combined J. Use this "
+        "when J is dominated by one runaway vector (see nagcsu.config.ObjectiveConfig."
+        "nrmse_ceiling), so a parameter that only moves that vector is not mistaken "
+        "for one that actually helps pressure or water cut."
+    ),
+)
 @click.pass_context
-def run(ctx: click.Context, group_name: str | None, perturbation_fraction: float) -> None:
+def run(
+    ctx: click.Context, group_name: str | None, perturbation_fraction: float, detailed: bool
+) -> None:
     """Perturb each parameter up and down and rank them by how much J moved.
 
     Useful both on its own, to see where tuning effort is likely to
@@ -54,6 +67,19 @@ def run(ctx: click.Context, group_name: str | None, perturbation_fraction: float
         )
         ledger.append(ledger_path, record)
 
+    if detailed:
+        detailed_evaluate = pipeline.make_evaluate_with_breakdown(
+            project_config, base_deck, run_id_prefix="sensitivity", on_outcome=on_outcome
+        )
+        detailed_results = sensitivity.run_detailed(
+            parameters.default_state(),
+            bounds_by_parameter,
+            detailed_evaluate,
+            perturbation_fraction=perturbation_fraction,
+        )
+        echo_detailed_results(detailed_results)
+        return
+
     evaluate = pipeline.make_evaluate(
         project_config, base_deck, run_id_prefix="sensitivity", on_outcome=on_outcome
     )
@@ -71,3 +97,22 @@ def run(ctx: click.Context, group_name: str | None, perturbation_fraction: float
         click.echo(
             f"{result.parameter:<40}{result.j_at_low:>12.4f}{result.j_at_high:>12.4f}{result.swing:>12.4f}"
         )
+
+
+def echo_detailed_results(results: list[sensitivity.DetailedSensitivityResult]) -> None:
+    """Print a `run_detailed` ranking, one column per scored vector plus combined J."""
+    if not results:
+        click.echo("No parameters to test.\n")
+        return
+
+    vector_names = sorted({name for result in results for name in result.vector_swings})
+    click.echo(f"Base J = {results[0].base_j:.4f}\n")
+    header = f"{'Parameter':<40}{'Swing (J)':>12}"
+    for vector_name in vector_names:
+        header += f"{vector_name:>14}"
+    click.echo(header)
+    for result in results:
+        row = f"{result.parameter:<40}{result.swing:>12.4f}"
+        for vector_name in vector_names:
+            row += f"{result.vector_swings.get(vector_name, 0.0):>14.4f}"
+        click.echo(row)
