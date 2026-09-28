@@ -3,9 +3,9 @@
 This document explains how the `nagcsu` package is put together and why,
 so a change six months from now can be made in the right module instead
 of wherever is convenient. It was written against the real deck and
-sample run already in `Data/`, not against the Execution Plan document
-alone, and it calls out the two or three places where the real output
-disagreed with that document's assumptions.
+sample run already in `Data/`, and it calls out the places where the
+real output is not what you would expect from the OPM Flow
+documentation alone.
 
 ## Goals
 
@@ -15,23 +15,20 @@ disagreed with that document's assumptions.
 - Every simulation is reproducible from a logged parameter state alone.
   No command edits a deck in place; every run patches a fresh copy of
   the pristine base deck.
-- Tunable parameters follow the tuning priority groups from Stage D.1 of
-  the Phase 2 Execution Plan (aquifer, then permeability multiplier,
-  then SGOF shape, and so on), and `match auto` changes one group at a
-  time per Stage D.3, stopping as soon as J reaches its target per
-  Stage C.4 rather than continuing to chase a smaller number.
+- Tunable parameters are organized into priority groups (aquifer, then
+  permeability multiplier, then SGOF shape, and so on), and `match auto`
+  changes one group at a time, stopping as soon as J reaches its target
+  rather than continuing to chase a smaller number.
 
-## Two things the real data changed from the plan
+## Two things about the real deck and output
 
-The Execution Plan was written before a real OPM Flow run existed to
-check it against. Building against the actual `Data/` output turned up
-two places worth flagging explicitly, because a script written to the
-plan's assumptions instead of the real format would appear to work and
-then silently do nothing:
+Building against the actual `Data/` output turned up two places worth
+flagging explicitly, because a script written to a more conventional
+layout would appear to work and then silently do nothing:
 
-1. **No `.DATA`-file split into `INCLUDE` files.** Stage 3.2's folder
-   layout assumes `base/include/aquifer.inc`, `relperm.inc`, and so on.
-   The actual deck is one monolithic `.DATA` file. `nagcsu.deck` and
+1. **No `.DATA`-file split into `INCLUDE` files.** A common layout has
+   `base/include/aquifer.inc`, `relperm.inc`, and so on. The actual deck
+   is one monolithic `.DATA` file. `nagcsu.deck` and
    `nagcsu.parameters` patch the monolithic file directly with
    exactly-one-match regexes rather than assuming an include-file split
    exists. `match auto`'s "write the calibrated value to an include
@@ -39,9 +36,8 @@ then silently do nothing:
    `parameters.yaml` snapshot instead, since there is no single `.inc`
    file per parameter to write into.
 
-2. **The `.PRT` file has no "MATERIAL BALANCE" line.** Stage A's
-   `prt_check.py` greps for one, and even says to "adapt to your actual
-   keyword layout." OPM Flow 2026.04's real `.PRT` output has no such
+2. **The `.PRT` file has no "MATERIAL BALANCE" line.** A check that greps
+   for one finds nothing. OPM Flow 2026.04's real `.PRT` output has no such
    line; it prints an `Error summary:` block (Warnings/Info/Errors/Bugs/
    Problems counts) and marks each well-convergence failure as
    `Warning: Inner well iterations failed for well <NAME> Treat the well
@@ -77,14 +73,14 @@ src/nagcsu/
   history.py                    Observed history workbook loader
   objective.py                   NRMSE per vector, combined weighted J
   ledger.py                       JSON record of every run, for report and match auto
-  pipeline.py                      execute_run() / make_evaluate(): the one place
+  pipeline.py                      execute() / make_evaluate(): the one place
                                     deck-patch -> simulate -> parse -> score is wired
   reporting.py                      Markdown snapshot report rendering
   algorithms/
     __init__.py         Trial / SearchResult shared types
     grid.py               Grid search over one or more parameters
     random_search.py       Uniform random search within bounds
-    coordinate_descent.py   The Stage D.1/D.3 one-group-at-a-time auto-tune driver
+    coordinate_descent.py   The one-group-at-a-time auto-tune driver
     sensitivity.py           One-at-a-time local sensitivity ranking
   cli/
     __init__.py    Top-level `nagcsu` click group, assembles every subcommand
@@ -119,7 +115,7 @@ parameter, each tagged with the tuning priority group it belongs to
 | `swof_endpoints` | 5 | krw_max, Sorw, water and oil Corey exponents (anchor-derived, touch last) |
 | `rock_and_porosity` | 6 | rock compressibility, uniform porosity multiplier |
 
-The plan's Stage D.1 table lists five groups; this registry splits SGOF
+This registry splits SGOF
 into a "shape" group (the two literature-assumed values, tune first) and
 an "endpoints" group (the three anchor-derived values, tune only if
 shape alone doesn't close the gap), mirroring how SWOF's endpoints are
@@ -135,15 +131,14 @@ existing table); the porosity multiplier scales whatever value is in
 `base_deck`, not whatever the deck currently holds. Applying the same
 state twice from the same pristine base always produces byte-identical
 output (`tests/test_parameters.py::test_apply_state_is_reproducible_from_the_pristine_base`).
-This is why every run in `pipeline.execute_run` reloads the base deck
+This is why every run in `pipeline.execute` reloads the base deck
 fresh rather than reusing a `Deck` object across runs.
 
 ## The objective
 
-`nagcsu.objective.score()` implements Stage C exactly: NRMSE per vector
-(pressure, water cut, GOR), combined into `J = w_p*NRMSE_p +
-w_wc*NRMSE_wc + w_gor*NRMSE_gor` with the Stage C.2 starting weights
-(0.50 / 0.35 / 0.15). Only `FPR`, `FWCT`, `FGOR` are ever scored, never
+`nagcsu.objective.score()` computes NRMSE per vector (pressure, water
+cut, GOR), combined into `J = w_p*NRMSE_p + w_wc*NRMSE_wc +
+w_gor*NRMSE_gor` with starting weights of 0.50 / 0.35 / 0.15. Only `FPR`, `FWCT`, `FGOR` are ever scored, never
 a rate vector, since the deck's `WCONPROD` blocks prescribe rates as an
 input rather than something OPM Flow predicts.
 
@@ -183,7 +178,7 @@ auto` instead writes:
   `runs/<run_id>/<deck filename>`, ready to run standalone.
 - `runs/<run_id>/parameters.yaml`, a flat mapping of every parameter to
   its resolved value. This is what a future refactor into `INCLUDE`
-  files (splitting the deck the way Stage 3.2 originally envisioned)
+  files (splitting the deck into per-block files)
   would read its per-parameter values from.
 
 ## Bugs found and fixed after the first build
@@ -195,7 +190,7 @@ any single function in isolation:
 
 - **A failed simulation used to crash the whole search.**
   `nagcsu.simulate.run` correctly raises `SimulationError` when OPM Flow
-  exits nonzero with no summary output, but `nagcsu.pipeline.execute_run`
+  exits nonzero with no summary output, but `nagcsu.pipeline.execute`
   did not catch it, so the first parameter combination that made OPM
   Flow crash outright (not uncommon for auto-tune's coordinate descent,
   which explores the full bounds of every parameter) would kill a
@@ -203,7 +198,7 @@ any single function in isolation:
   session partway through, discarding every trial already run. This
   directly contradicted `pipeline.make_evaluate`'s own docstring, which
   already promised graceful `float("inf")` handling for "a state whose
-  run produced no score." `execute_run` now catches `SimulationError`
+  run produced no score." `execute` now catches `SimulationError`
   and returns a `RunOutcome` with `simulation_error` set instead of
   raising; every CLI command surfaces that message and logs it to the
   ledger rather than aborting. `match sweep/random/auto` also now raise
@@ -224,9 +219,8 @@ any single function in isolation:
 - **`swof.oil_exponent` was hardcoded to `4.0`** instead of exposed as a
   tunable parameter, even though the equivalent SGOF parameter
   (`sgof.oil_exponent`) is tunable and both are literally the same
-  Corey-model role in their respective tables. Stage D.1's table only
-  names Krw_max/Sorw/nw for the SWOF group, which is why it was left
-  out originally, but permanently fixing a real relative-permeability
+  Corey-model role in their respective tables. It was left out at first
+  because only Krw_max, Sorw and nw were considered worth tuning, but permanently fixing a real relative-permeability
   shape parameter meant `match auto`'s `swof_endpoints` group could
   never fully close a water-cut gap that this exponent, not the other
   three, was actually responsible for. It is now `swof.oil_exponent`,
@@ -255,8 +249,7 @@ any single function in isolation:
   workbook's actual columns could not be read while building this (it's
   a binary `.xlsx`, and the tool used to browse the repo could not
   return its content). `guess_column_map` matches the
-  `DATE,FPR,WWCT_<WELL>,WGOR_<WELL>` layout Stage B.2 of the Execution
-  Plan documents building the workbook in, tolerant of `_`, `:` or `-`
+  `DATE,FPR,WWCT_<WELL>,WGOR_<WELL>` layout, tolerant of `_`, `:` or `-`
   as the separator and either case. If the real workbook doesn't match,
   set `history.column_map` explicitly in `nagcsu.yaml` (see
   `nagcsu.config.HistoryConfig.column_map`); `tests/test_history.py`

@@ -35,14 +35,14 @@ def test_random_search_is_reproducible_with_a_seed() -> None:
         {"a": 0.0, "b": 0.0},
         {"a": (-10, 10), "b": (-10, 10)},
         quadratic_bowl,
-        num_trials=10,
+        n_trials=10,
         seed=42,
     )
     result_two = random_search.search(
         {"a": 0.0, "b": 0.0},
         {"a": (-10, 10), "b": (-10, 10)},
         quadratic_bowl,
-        num_trials=10,
+        n_trials=10,
         seed=42,
     )
     assert [trial.state for trial in result_one.trials] == [

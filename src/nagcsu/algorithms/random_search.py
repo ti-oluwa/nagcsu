@@ -13,26 +13,26 @@ from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_o
 
 def search(
     base_state: dict[str, float],
-    bounds_by_parameter: dict[str, tuple[float, float]],
+    parameter_bounds: dict[str, tuple[float, float]],
     evaluate: EvaluateFunction,
     *,
-    num_trials: int = 20,
+    n_trials: int = 20,
     seed: int | None = None,
 ) -> SearchResult:
-    """Evaluate `num_trials` uniformly random states within `bounds_by_parameter`.
+    """Evaluate `n_trials` uniformly random states within `parameter_bounds`.
 
     :param base_state: Full parameter state; every parameter not in
-        `bounds_by_parameter` is held fixed at its value here.
-    :param bounds_by_parameter: Inclusive `(low, high)` sampling range
+        `parameter_bounds` is held fixed at its value here.
+    :param parameter_bounds: Inclusive `(low, high)` sampling range
         per parameter name to randomize.
     :param seed: Random seed, for a reproducible sequence of trials.
     """
     rng = random.Random(seed)
     trials: list[Trial] = []
-    for _ in range(num_trials):
+    for _ in range(n_trials):
         state = dict(base_state)
-        for name, (low, high) in bounds_by_parameter.items():
-            state[name] = rng.uniform(low, high)
+        for parameter, (low, high) in parameter_bounds.items():
+            state[parameter] = rng.uniform(low, high)
         trials.append(Trial(state=state, j=evaluate(state)))
 
     return SearchResult(trials=trials, best=best_of(trials), strategy="random")

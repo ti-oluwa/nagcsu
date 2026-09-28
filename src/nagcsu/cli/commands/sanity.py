@@ -8,7 +8,7 @@ from nagcsu.cli import context
 
 @click.group(name="sanity")
 def sanity() -> None:
-    """Checks a clean `.PRT` file (Stage A) does not by itself cover."""
+    """Checks a clean `.PRT` file does not by itself cover."""
 
 
 @sanity.command(name="check-init")

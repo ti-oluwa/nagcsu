@@ -7,9 +7,9 @@ wraps OPM Flow, [res2df](https://github.com/equinor/res2df) and
 handful of `nagcsu` commands instead of hand-editing deck files and
 eyeballing plots.
 
-See `docs/ARCHITECTURE.md` for how this is put together and, more
-importantly, the two or three places the real deck and `.PRT` output
-disagreed with the Phase 2 Execution Plan's assumptions.
+See `docs/ARCHITECTURE.md` for how this is put together and the
+places where the real deck and `.PRT` output behave differently from what
+you might assume.
 
 ## Requirements
 
@@ -69,7 +69,7 @@ nagcsu report show best                       # snapshot of the best run found
 - `nagcsu match list-parameters` - list every tunable parameter, its group, bounds and default.
 - `nagcsu match sweep --param NAME --values v1,v2,...` - run every value of one parameter.
 - `nagcsu match random --param NAME [--param NAME2 ...] --trials N` - random search within bounds.
-- `nagcsu match auto [--target-j J] [--groups g1,g2,...]` - auto-tune one group at a time until J reaches its target (Stage D.1/D.3/C.4).
+- `nagcsu match auto [--target-j J] [--groups g1,g2,...]` - auto-tune one group at a time until J reaches its target. Also takes `--starts`, `--weights`, `--xatol-fraction`, `--max-evals-per-parameter` and `--min-improvement`.
 - `nagcsu sensitivity run [--group NAME]` - rank parameters by local effect on J.
 - `nagcsu report list` / `nagcsu report show <run_id|latest|best>` - inspect logged runs.
 

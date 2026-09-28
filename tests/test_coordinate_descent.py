@@ -36,7 +36,7 @@ def test_multi_start_search_with_one_start_matches_plain_search() -> None:
         {"x": 0.5, "y": 0.5}, ["group_a"], bounds_by_group, evaluate, target_j=0.0
     )
     multi_result, multi_outcomes = coordinate_descent.multi_start_search(
-        {"x": 0.5, "y": 0.5}, ["group_a"], bounds_by_group, evaluate, target_j=0.0, num_starts=1
+        {"x": 0.5, "y": 0.5}, ["group_a"], bounds_by_group, evaluate, target_j=0.0, n_starts=1
     )
 
     assert multi_result.best.j == plain_result.best.j
@@ -58,7 +58,7 @@ def test_multi_start_search_escapes_a_local_optimum_a_single_start_cannot() -> N
         bounds_by_group,
         evaluate,
         target_j=0.01,
-        num_starts=8,
+        n_starts=8,
         seed=0,
     )
 
@@ -83,7 +83,7 @@ def test_multi_start_search_stops_early_once_target_is_already_reached() -> None
         bounds_by_group,
         always_below_target,
         target_j=1.0,
-        num_starts=5,
+        n_starts=5,
     )
 
     assert result.best.j == pytest.approx(0.0)
@@ -91,3 +91,58 @@ def test_multi_start_search_stops_early_once_target_is_already_reached() -> None
     # have skipped every group, and no further random starts should run.
     assert outcomes == []
     assert len(result.trials) == 1
+
+
+def test_search_abandons_a_group_whose_parameter_barely_moves_j() -> None:
+    # `x` has real signal; `flat` barely moves J at all (its coefficient
+    # is tiny), so passes over the `flat` group should stop well short
+    # of `passes_per_group` once min_relative_improvement kicks in.
+    def evaluate(state: dict[str, float]) -> float:
+        return (state["x"] - 5.0) ** 2 + 1e-6 * state["flat"]
+
+    bounds_by_group = {"flat_group": {"flat": (0.0, 10.0)}}
+
+    with_early_stop, _ = coordinate_descent.search(
+        {"x": 0.0, "flat": 0.0},
+        ["flat_group"],
+        bounds_by_group,
+        evaluate,
+        target_j=-1.0,
+        passes_per_group=10,
+        min_relative_improvement=0.5,
+    )
+    without_early_stop, _ = coordinate_descent.search(
+        {"x": 0.0, "flat": 0.0},
+        ["flat_group"],
+        bounds_by_group,
+        evaluate,
+        target_j=-1.0,
+        passes_per_group=10,
+        min_relative_improvement=0.0,
+    )
+
+    assert len(with_early_stop.trials) < len(without_early_stop.trials)
+
+
+def test_max_evaluations_per_parameter_caps_simulations_on_one_parameter() -> None:
+    call_count = 0
+
+    def evaluate(state: dict[str, float]) -> float:
+        nonlocal call_count
+        call_count += 1
+        return (state["x"] - 5.0) ** 2
+
+    bounds_by_group = {"group_a": {"x": (0.0, 10.0)}}
+    coordinate_descent.search(
+        {"x": 0.0},
+        ["group_a"],
+        bounds_by_group,
+        evaluate,
+        target_j=0.0,
+        passes_per_group=1,
+        max_evaluations_per_parameter=3,
+    )
+
+    # +1 for search()'s own baseline evaluation of the starting state,
+    # which is not itself a per-parameter probe.
+    assert call_count <= 4

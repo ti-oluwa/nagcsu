@@ -67,7 +67,7 @@ def render_run_report(
             )
         lines.append("")
         lines.append(
-            "Groups were tuned in priority order (Stage D.1 of the Execution Plan); "
+            "Groups were tuned in priority order, one at a time; "
             "a group not listed here was never touched because an earlier group "
             "already reached the target."
         )

@@ -4,8 +4,7 @@ Two file shapes are supported, auto-detected from the column names
 (see `detect_long_format_columns`):
 
 - **Wide**: one row per date, with a `DATE,FPR,WWCT_<WELL>,WGOR_<WELL>,...`
-  layout. This is what Stage B.2 of the Phase 2 Execution Plan describes
-  building.
+  layout, convenient when the history has been prepared by hand.
 - **Long**: one row per well per date (the shape of a typical monthly
   production export), identified by a well-name column (`Field`, `Well`,
   and similar) alongside per-well rate and pressure columns

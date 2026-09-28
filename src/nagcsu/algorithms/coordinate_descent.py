@@ -7,6 +7,17 @@ import scipy.optimize
 
 from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of
 
+DEFAULT_XATOL_FRACTION = 0.02
+"""Default `xatol_fraction` for `search`: locate each parameter to within
+2 percent of its bound range."""
+
+DEFAULT_MAX_EVALUATIONS_PER_PARAMETER = 12
+"""Default `max_evaluations_per_parameter` for `search`."""
+
+DEFAULT_MIN_RELATIVE_IMPROVEMENT = 0.005
+"""Default `min_relative_improvement` for `search`: a pass that improves J
+by less than half a percent counts as no progress."""
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class GroupOutcome:
@@ -33,6 +44,9 @@ def search(
     *,
     target_j: float,
     passes_per_group: int = 2,
+    xatol_fraction: float = DEFAULT_XATOL_FRACTION,
+    max_evaluations_per_parameter: int = DEFAULT_MAX_EVALUATIONS_PER_PARAMETER,
+    min_relative_improvement: float = DEFAULT_MIN_RELATIVE_IMPROVEMENT,
 ) -> tuple[SearchResult, list[GroupOutcome]]:
     """Tune `groups_in_order` one at a time until `target_j` is reached.
 
@@ -40,13 +54,29 @@ def search(
         `nagcsu.parameters.default_state`.
     :param groups_in_order: Tuning priority order, normally
         `nagcsu.constants.TUNING_PRIORITY_ORDER`.
-    :param bounds_by_group: `{parameter_name: (low, high)}` for every
+    :param bounds_by_group: `{parameter: (low, high)}` for every
         parameter in each group, keyed by group name.
     :param target_j: Stop as soon as the best J found is at or below this.
     :param passes_per_group: How many full cycles through a group's
         parameters to run before moving on, if the target is not yet
         reached. Each pass re-optimizes every parameter in the group
         once, holding the others at their current best value.
+    :param xatol_fraction: How precisely each parameter is located,
+        as a fraction of that parameter's own bound range. The default
+        of 2 percent stops a one-parameter search once the bracket is
+        that narrow. Without it, scipy's absolute default tolerance
+        keeps refining a parameter far past the point where the change
+        is visible in J (an aquifer radius searched to four decimals,
+        for example), and every extra refinement is a full simulation.
+    :param max_evaluations_per_parameter: Hard cap on simulations spent
+        on one parameter in one pass.
+    :param min_relative_improvement: If a full pass over a group lowers
+        J by less than this fraction of its value going in, the group is
+        treated as exhausted and the search moves on to the next one
+        instead of spending another pass on it. This is what stops a
+        group whose parameters barely influence J (an aquifer that does
+        not control water cut, for example) from absorbing dozens of
+        runs.
     :returns: The full `SearchResult` across every trial run, plus one
         `GroupOutcome` per group that was actually touched (a group
         after the target was already reached is skipped and not
@@ -70,11 +100,12 @@ def search(
         for _ in range(passes_per_group):
             if current_best_j <= target_j:
                 break
-            for parameter_name, (low, high) in group_bounds.items():
+            j_before_pass = current_best_j
+            for parameter, (low, high) in group_bounds.items():
 
-                def objective_along_one_axis(value: float, _name: str = parameter_name) -> float:
+                def objective_along_one_axis(value: float, name: str = parameter) -> float:
                     candidate_state = dict(current_best_state)
-                    candidate_state[_name] = value
+                    candidate_state[name] = value
                     j = evaluate(candidate_state)
                     trials.append(Trial(state=dict(candidate_state), j=j))
                     return j
@@ -83,10 +114,17 @@ def search(
                     objective_along_one_axis,
                     bounds=(low, high),
                     method="bounded",
+                    options={
+                        "xatol": (high - low) * xatol_fraction,
+                        "maxiter": max_evaluations_per_parameter,
+                    },
                 )
                 if result.fun < current_best_j:  # type: ignore[attr-defined]
-                    current_best_state[parameter_name] = result.x  # type: ignore[attr-defined]
+                    current_best_state[parameter] = result.x  # type: ignore[attr-defined]
                     current_best_j = result.fun  # type: ignore[attr-defined]
+
+            if (j_before_pass - current_best_j) < j_before_pass * min_relative_improvement:
+                break
 
         outcomes.append(
             GroupOutcome(
@@ -112,7 +150,10 @@ def multi_start_search(
     *,
     target_j: float,
     passes_per_group: int = 2,
-    num_starts: int = 1,
+    xatol_fraction: float = DEFAULT_XATOL_FRACTION,
+    max_evaluations_per_parameter: int = DEFAULT_MAX_EVALUATIONS_PER_PARAMETER,
+    min_relative_improvement: float = DEFAULT_MIN_RELATIVE_IMPROVEMENT,
+    n_starts: int = 1,
     seed: int | None = None,
 ) -> tuple[SearchResult, list[GroupOutcome]]:
     """Run `search` from several starting states and keep the best.
@@ -132,11 +173,11 @@ def multi_start_search(
     single start can, without changing anything about how any one start
     is itself searched.
 
-    :param num_starts: Number of independent runs of `search`, including
+    :param n_starts: Number of independent runs of `search`, including
         the one from `base_state` itself, which always runs first. `1`
         reproduces `search`'s exact behavior.
     :param seed: Random seed for the additional starting states, for a
-        reproducible sequence of starts. Unused when `num_starts <= 1`;
+        reproducible sequence of starts. Unused when `n_starts <= 1`;
         `base_state` itself is never randomized.
     :returns: The `SearchResult` and `GroupOutcome` list from whichever
         start reached the lowest `best.j`, so the return shape and
@@ -152,17 +193,20 @@ def multi_start_search(
         evaluate,
         target_j=target_j,
         passes_per_group=passes_per_group,
+        xatol_fraction=xatol_fraction,
+        max_evaluations_per_parameter=max_evaluations_per_parameter,
+        min_relative_improvement=min_relative_improvement,
     )
 
     rng = random.Random(seed)
-    for _ in range(max(0, num_starts - 1)):
+    for _ in range(max(0, n_starts - 1)):
         if best_result.best.j <= target_j:
             break
 
         random_state = dict(base_state)
         for group_bounds in bounds_by_group.values():
-            for parameter_name, (low, high) in group_bounds.items():
-                random_state[parameter_name] = rng.uniform(low, high)
+            for parameter, (low, high) in group_bounds.items():
+                random_state[parameter] = rng.uniform(low, high)
 
         result, outcomes = search(
             random_state,
@@ -171,6 +215,9 @@ def multi_start_search(
             evaluate,
             target_j=target_j,
             passes_per_group=passes_per_group,
+            xatol_fraction=xatol_fraction,
+            max_evaluations_per_parameter=max_evaluations_per_parameter,
+            min_relative_improvement=min_relative_improvement,
         )
         if result.best.j < best_result.best.j:
             best_result, best_outcomes = result, outcomes

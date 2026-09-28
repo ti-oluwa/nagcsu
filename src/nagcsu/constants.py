@@ -28,22 +28,21 @@ DEFAULT_OBJECTIVE_WEIGHTS: typing.Final[dict[str, float]] = {
     "watercut": 0.35,
     "gor": 0.15,
 }
-"""Starting NRMSE weights for the combined objective J, per Stage C.2 of
-the Phase 2 Execution Plan. Pressure is weighted highest because it is
-the most direct read on volumetric support, the thing the calibration is
-least sure of.
+"""Starting NRMSE weights for the combined objective J. Pressure is
+weighted highest because it is the most direct read on volumetric
+support, the thing the calibration is least sure of.
 """
 
 DEFAULT_TARGET_J: typing.Final[float] = 0.125
-"""Midpoint of the 0.10 to 0.15 target range for J from Stage C.4. Below
-this, further tuning is more likely to overfit the single synthetic
-anchor than to genuinely improve the match.
+"""Midpoint of a 0.10 to 0.15 target range for J. Below this, further
+tuning is more likely to overfit the single synthetic anchor than to
+genuinely improve the match.
 """
 
 DEFAULT_CUSHION_GAS_FRACTION: typing.Final[float] = 0.60
 """Starting cushion gas fraction for a depleted-reservoir storage scheme,
-from the 50 to 70 percent range given in Stage F.2. The remaining
-fraction is working gas, cycled in and out each period.
+within the usual 50 to 70 percent range. The remaining fraction is
+working gas, cycled in and out each period.
 """
 
 TUNING_PRIORITY_ORDER: typing.Final[tuple[str, ...]] = (
@@ -54,7 +53,7 @@ TUNING_PRIORITY_ORDER: typing.Final[tuple[str, ...]] = (
     "swof_endpoints",
     "rock_and_porosity",
 )
-"""Parameter group tuning order from Stage D.1. Auto mode changes one
+"""Parameter group tuning order. Auto mode changes one
 group at a time in this order and only moves on to a later group once
 earlier groups stop reducing the objective, so a run that improves the
 fit can always be attributed to a single change.

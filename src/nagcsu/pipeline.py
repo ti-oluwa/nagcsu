@@ -13,7 +13,7 @@ from nagcsu.exceptions import SimulationError
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class RunOutcome:
-    """Everything produced by one `execute_run` call."""
+    """Everything produced by one `execute` call."""
 
     run_id: str
     """Identifier this run was executed under."""
@@ -34,7 +34,7 @@ class RunOutcome:
 
     objective_result: objective.ObjectiveResult | None
     """Score against the observed history, or `None` if `score=False`
-    was passed to `execute_run`, the simulation failed outright
+    was passed to `execute`, the simulation failed outright
     (see `simulation_error`), or no summary output was produced.
     """
 
@@ -48,7 +48,7 @@ class RunOutcome:
     """
 
 
-def execute_run(
+def execute(
     config: ProjectConfig,
     base_deck: Deck,
     state: dict[str, float],
@@ -145,7 +145,7 @@ def make_evaluate(
 ) -> typing.Callable[[dict[str, float]], float]:
     """Build an `evaluate(state) -> J` callback for `nagcsu.algorithms`.
 
-    Each call runs a full `execute_run` under a fresh, incrementing
+    Each call runs a full `execute` under a fresh, incrementing
     run ID (`<run_id_prefix>_00000`, `<run_id_prefix>_00001`, ...), so a
     search strategy's hundreds of trials each get their own output
     directory rather than overwriting one another.
@@ -162,7 +162,7 @@ def make_evaluate(
 
     def evaluate(state: dict[str, float]) -> float:
         run_id = f"{run_id_prefix}_{next(counter):05d}"
-        outcome = execute_run(config, base_deck, state, run_id=run_id, score=True)
+        outcome = execute(config, base_deck, state, run_id=run_id, score=True)
         if on_outcome is not None:
             on_outcome(outcome)
         if outcome.objective_result is None:
@@ -178,7 +178,7 @@ class EvaluationBreakdown:
 
     For search strategies that need to see more than the combined
     objective a plain `make_evaluate` callable returns, for example to
-    tell *which* scored vector a state change actually helped or hurt.
+    tell which scored vector a state change actually helped or hurt.
     """
 
     j: float
@@ -214,7 +214,7 @@ def make_evaluate_with_breakdown(
 
     def evaluate(state: dict[str, float]) -> EvaluationBreakdown:
         run_id = f"{run_id_prefix}_{next(counter):05d}"
-        outcome = execute_run(config, base_deck, state, run_id=run_id, score=True)
+        outcome = execute(config, base_deck, state, run_id=run_id, score=True)
         if on_outcome is not None:
             on_outcome(outcome)
         if outcome.objective_result is None:

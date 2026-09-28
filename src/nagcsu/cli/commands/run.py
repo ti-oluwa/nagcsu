@@ -36,7 +36,7 @@ def run(
     records = ledger.load(ledger_path)
     resolved_run_id = run_id or ledger.new_run_id(records)
 
-    outcome = pipeline.execute_run(
+    outcome = pipeline.execute(
         project_config,
         base_deck,
         state,

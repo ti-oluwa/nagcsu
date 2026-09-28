@@ -53,40 +53,48 @@ def run(
 
     project_config, base_deck = context.load(ctx)
     specs = (
-        parameters.parameters_in_group(group_name)
+        parameters.get_parameters_in_group(group_name)
         if group_name
         else list(parameters.PARAMETERS.values())
     )
-    bounds_by_parameter = {spec.name: spec.bounds for spec in specs}
+    parameter_bounds = {spec.name: spec.bounds for spec in specs}
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
         record = pipeline.build_run_record(
-            outcome, group=group_name, strategy="sensitivity", note="sensitivity probe"
+            outcome,
+            group=group_name,
+            strategy="sensitivity",
+            note="sensitivity probe",
         )
         ledger.append(ledger_path, record)
 
     if detailed:
-        detailed_evaluate = pipeline.make_evaluate_with_breakdown(
-            project_config, base_deck, run_id_prefix="sensitivity", on_outcome=on_outcome
+        evaluate = pipeline.make_evaluate_with_breakdown(
+            project_config,
+            base_deck,
+            run_id_prefix="sensitivity",
+            on_outcome=on_outcome,
         )
-        detailed_results = sensitivity.run_detailed(
+        results = sensitivity.run_detailed(
             parameters.default_state(),
-            bounds_by_parameter,
-            detailed_evaluate,
+            parameter_bounds,
+            evaluate,
             perturbation_fraction=perturbation_fraction,
         )
-        echo_detailed_results(detailed_results)
+        echo_detailed_results(results)
         return
 
     evaluate = pipeline.make_evaluate(
-        project_config, base_deck, run_id_prefix="sensitivity", on_outcome=on_outcome
+        project_config,
+        base_deck,
+        run_id_prefix="sensitivity",
+        on_outcome=on_outcome,
     )
-
     results, _ = sensitivity.run(
         parameters.default_state(),
-        bounds_by_parameter,
+        parameter_bounds,
         evaluate,
         perturbation_fraction=perturbation_fraction,
     )
@@ -111,6 +119,7 @@ def echo_detailed_results(results: list[sensitivity.DetailedSensitivityResult]) 
     for vector_name in vector_names:
         header += f"{vector_name:>14}"
     click.echo(header)
+
     for result in results:
         row = f"{result.parameter:<40}{result.swing:>12.4f}"
         for vector_name in vector_names:

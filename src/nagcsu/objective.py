@@ -1,7 +1,6 @@
 """Scoring how well a simulated summary matches the observed history.
 
-Implements Stage C of the Phase 2 Execution Plan: normalized RMSE per
-scored vector, combined into one weighted objective J. Only pressure,
+Normalized RMSE per scored vector, combined into one weighted objective J. Only pressure,
 water cut and GOR are ever scored, never the rate vectors, since the
 rates are a prescribed input to the deck (`WCONPROD`) rather than
 something OPM Flow predicts; a "perfect" rate match proves nothing.

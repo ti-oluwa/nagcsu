@@ -1,8 +1,8 @@
 """Tests for `nagcsu.pipeline`.
 
 The most important behavior covered here: a failed simulation must
-never raise out of `execute_run`, since `nagcsu.algorithms` search
-strategies call `evaluate()` (built on top of `execute_run`) potentially
+never raise out of `execute`, since `nagcsu.algorithms` search
+strategies call `evaluate()` (built on top of `execute`) potentially
 hundreds of times in a loop, and one bad parameter combination crashing
 OPM Flow should end that one trial, not the whole search.
 """
@@ -25,7 +25,7 @@ def project_config(tmp_path, sample_deck: Deck) -> config.ProjectConfig:
     )
 
 
-def test_execute_run_reports_simulation_failure_without_raising(
+def test_execute_reports_simulation_failure_without_raising(
     monkeypatch, project_config: config.ProjectConfig, sample_deck: Deck
 ) -> None:
     def fake_run(*args, **kwargs):
@@ -33,7 +33,7 @@ def test_execute_run_reports_simulation_failure_without_raising(
 
     monkeypatch.setattr(pipeline.simulate, "run", fake_run)
 
-    outcome = pipeline.execute_run(project_config, sample_deck, {}, run_id="run_fail", score=True)
+    outcome = pipeline.execute(project_config, sample_deck, {}, run_id="run_fail", score=True)
 
     assert outcome.simulation_error is not None
     assert "flow exited 1" in outcome.simulation_error
@@ -70,14 +70,14 @@ def test_to_run_record_carries_simulation_error_through(
 
     monkeypatch.setattr(pipeline.simulate, "run", fake_run)
 
-    outcome = pipeline.execute_run(project_config, sample_deck, {}, run_id="run_fail")
+    outcome = pipeline.execute(project_config, sample_deck, {}, run_id="run_fail")
     record = pipeline.build_run_record(outcome, group=None, strategy=None, note="")
 
     assert record.simulation_error == "boom"
     assert record.j is None
 
 
-def test_execute_run_scores_a_successful_simulation(
+def test_execute_scores_a_successful_simulation(
     monkeypatch, project_config: config.ProjectConfig, sample_deck: Deck
 ) -> None:
     def fake_simulate_run(deck_path, output_dir, *, flow_executable="flow", **kwargs):
@@ -115,7 +115,7 @@ def test_execute_run_scores_a_successful_simulation(
     monkeypatch.setattr(pipeline.summary, "load_summary", fake_load_summary)
     monkeypatch.setattr(pipeline.history, "load_observed_history", fake_load_observed_history)
 
-    outcome = pipeline.execute_run(project_config, sample_deck, {}, run_id="run_ok")
+    outcome = pipeline.execute(project_config, sample_deck, {}, run_id="run_ok")
 
     assert outcome.simulation_error is None
     assert outcome.objective_result is not None

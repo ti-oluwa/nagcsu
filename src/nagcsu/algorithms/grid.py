@@ -15,29 +15,29 @@ an afternoon of compute.
 
 def search(
     base_state: dict[str, float],
-    values_by_parameter: dict[str, list[float]],
+    parameter_values: dict[str, list[float]],
     evaluate: EvaluateFunction,
     *,
     max_evaluations: int = MAX_EVALUATIONS_DEFAULT,
 ) -> SearchResult:
     """
-    Evaluate every combination of `values_by_parameter` against `base_state`.
+    Evaluate every combination of `parameter_values` against `base_state`.
 
     :param base_state: Full parameter state; every parameter not in
-        `values_by_parameter` is held fixed at its value here.
-    :param values_by_parameter: The parameter values to combine, keyed
+        `parameter_values` is held fixed at its value here.
+    :param parameter_values: The parameter values to combine, keyed
         by parameter name. One entry sweeps a single parameter; more
         than one produces their Cartesian product.
-    :raises ValueError: if the Cartesian product of `values_by_parameter`
+    :raises ValueError: if the Cartesian product of `parameter_values`
         would exceed `max_evaluations`.
     """
-    parameter_names = list(values_by_parameter.keys())
+    parameters = list(parameter_values.keys())
     combinations = list(
-        itertools.product(*(values_by_parameter[name] for name in parameter_names))
+        itertools.product(*(parameter_values[parameter] for parameter in parameters))
     )
     if len(combinations) > max_evaluations:
         raise ValueError(
-            f"Grid over {parameter_names} has {len(combinations)} combinations, "
+            f"Grid over {parameters} has {len(combinations)} combinations, "
             f"exceeding `max_evaluations={max_evaluations}`. Narrow the value lists "
             f"or raise max_evaluations explicitly."
         )
@@ -45,7 +45,7 @@ def search(
     trials: list[Trial] = []
     for combination in combinations:
         state = dict(base_state)
-        state.update(zip(parameter_names, combination, strict=True))
+        state.update(zip(parameters, combination, strict=True))
         trials.append(Trial(state=state, j=evaluate(state)))
 
     return SearchResult(trials=trials, best=best_of(trials), strategy="grid")

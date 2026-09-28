@@ -20,8 +20,8 @@ from nagcsu.deck import NUMBER_PATTERN, Deck, patch_relperm_table, transform_wit
 CONNATE_WATER_SATURATION: typing.Final[float] = 0.13
 """Swc, the first saturation row of the SWOF table. Taken directly from
 the EK6 anchor's relative-permeability table and not exposed as a
-tunable parameter, since Stage D.1 only names Krw_max, Sorw and nw as
-SWOF parameters worth tuning.
+tunable parameter; only Krw_max, Sorw and the Corey exponents are
+exposed for the SWOF table.
 """
 
 MAX_OIL_RELATIVE_PERMEABILITY: typing.Final[float] = 0.80
@@ -162,9 +162,8 @@ PARAMETERS: typing.Final[dict[str, ParameterSpec]] = {
             bounds=(1.0, 6.0),
             default=4.0,
             description=(
-                "Water-oil Corey exponent no (SWOF), from the EK6 anchor. Not named in the "
-                "Execution Plan's Stage D.1 table alongside Krw_max/Sorw/nw, but exposed here "
-                "for consistency with sgof.oil_exponent rather than left permanently fixed."
+                "Water-oil Corey exponent no (SWOF), from the EK6 anchor. Exposed for "
+                "consistency with sgof.oil_exponent rather than left permanently fixed."
             ),
         ),
         ParameterSpec(
@@ -189,7 +188,7 @@ groups' tuning priority.
 """
 
 
-def parameters_in_group(group: str) -> list[ParameterSpec]:
+def get_parameters_in_group(group: str) -> list[ParameterSpec]:
     """Return the `ParameterSpec` entries belonging to `group`, in a stable order."""
     return [spec for spec in PARAMETERS.values() if spec.group == group]
 

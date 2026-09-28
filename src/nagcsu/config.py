@@ -30,7 +30,7 @@ class ObjectiveConfig:
     """
 
     target_j: float = constants.DEFAULT_TARGET_J
-    """J value at or below which tuning should stop (Stage C.4)."""
+    """J value at or below which tuning should stop."""
 
     nrmse_ceiling: float | None = None
     """If set, each vector's NRMSE is clipped to this value before being
@@ -177,10 +177,10 @@ class ProjectConfig:
             raise ValueError("At least one well must be configured to score against")
         if self.threads_per_process is not None and self.threads_per_process < 1:
             raise ValueError(
-                f"threads_per_process must be at least 1 (or null), got {self.threads_per_process}"
+                f"`threads_per_process` must be at least 1 (or null), got {self.threads_per_process}"
             )
         if not all(isinstance(argument, str) for argument in self.extra_args):
-            raise ValueError(f"extra_args must be a list of strings, got {self.extra_args!r}")
+            raise ValueError(f"`extra_args` must be a list of strings, got {self.extra_args!r}")
 
 
 def load(config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE) -> ProjectConfig:

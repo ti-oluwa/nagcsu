@@ -44,14 +44,14 @@ class SensitivityResult:
 
 def run(
     base_state: dict[str, float],
-    bounds_by_parameter: dict[str, tuple[float, float]],
+    parameter_bounds: dict[str, tuple[float, float]],
     evaluate: EvaluateFunction,
     *,
     perturbation_fraction: float = 0.15,
 ) -> tuple[list[SensitivityResult], list[Trial]]:
     """Rank parameters by their local one-at-a-time effect on J.
 
-    :param bounds_by_parameter: `(low, high)` bound per parameter to
+    :param parameter_bounds: `(low, high)` bound per parameter to
         test; the actual perturbation used is `perturbation_fraction` of
         `high - low`, centered on the parameter's value in `base_state`
         and clamped back into `(low, high)`.
@@ -66,26 +66,26 @@ def run(
     trials.append(Trial(state=dict(base_state), j=base_j))
 
     results: list[SensitivityResult] = []
-    for name, (low, high) in bounds_by_parameter.items():
+    for parameter, (low, high) in parameter_bounds.items():
         span = high - low
-        center = base_state.get(name, (low + high) / 2.0)
+        center = base_state.get(parameter, (low + high) / 2.0)
         delta = span * perturbation_fraction
         low_value = max(low, center - delta)
         high_value = min(high, center + delta)
 
         low_state = dict(base_state)
-        low_state[name] = low_value
+        low_state[parameter] = low_value
         j_low = evaluate(low_state)
         trials.append(Trial(state=low_state, j=j_low))
 
         high_state = dict(base_state)
-        high_state[name] = high_value
+        high_state[parameter] = high_value
         j_high = evaluate(high_state)
         trials.append(Trial(state=high_state, j=j_high))
 
         results.append(
             SensitivityResult(
-                parameter=name,
+                parameter=parameter,
                 base_j=base_j,
                 j_at_low=j_low,
                 j_at_high=j_high,
@@ -125,7 +125,7 @@ class DetailedSensitivityResult:
 
 def run_detailed(
     base_state: dict[str, float],
-    bounds_by_parameter: dict[str, tuple[float, float]],
+    parameter_bounds: dict[str, tuple[float, float]],
     evaluate: DetailedEvaluateFunction,
     *,
     perturbation_fraction: float = 0.15,
@@ -151,19 +151,19 @@ def run_detailed(
     base_breakdown = evaluate(base_state)
 
     results: list[DetailedSensitivityResult] = []
-    for name, (low, high) in bounds_by_parameter.items():
+    for parameter, (low, high) in parameter_bounds.items():
         span = high - low
-        center = base_state.get(name, (low + high) / 2.0)
+        center = base_state.get(parameter, (low + high) / 2.0)
         delta = span * perturbation_fraction
         low_value = max(low, center - delta)
         high_value = min(high, center + delta)
 
         low_state = dict(base_state)
-        low_state[name] = low_value
+        low_state[parameter] = low_value
         breakdown_low = evaluate(low_state)
 
         high_state = dict(base_state)
-        high_state[name] = high_value
+        high_state[parameter] = high_value
         breakdown_high = evaluate(high_state)
 
         vector_names = set(breakdown_low.vector_nrmse) | set(breakdown_high.vector_nrmse)
@@ -176,7 +176,7 @@ def run_detailed(
         }
         results.append(
             DetailedSensitivityResult(
-                parameter=name,
+                parameter=parameter,
                 base_j=base_breakdown.j,
                 swing=abs(breakdown_high.j - breakdown_low.j),
                 vector_swings=vector_swings,
