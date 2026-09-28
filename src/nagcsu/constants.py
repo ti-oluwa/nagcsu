@@ -60,14 +60,29 @@ fit can always be attributed to a single change.
 """
 
 DEFAULT_DECK_PATH = pathlib.Path("Data/NigerDelta UGH1 Composite Field.DATA")
+"""Reservoir deck file for the UGH-1 composite model used by default when
+no explicit deck path is configured.
+"""
 
 DEFAULT_HISTORY_PATH = pathlib.Path("Data/Monthly Production Data.xlsx")
+"""Production-history workbook used to compare model output against observed
+field performance when a history file is not supplied.
+"""
 
 DEFAULT_OUTPUT_DIR = pathlib.Path("runs")
+"""Default directory under which run artifacts, reports, and generated
+outputs are written.
+"""
 
 DEFAULT_LEDGER_PATH = DEFAULT_OUTPUT_DIR / "ledger.json"
+"""Ledger file recording run metadata and provenance for generated model
+runs.
+"""
 
 DEFAULT_CONFIG_FILE: typing.Final[str] = "nagcsu.yaml"
 """Filename a bare `nagcsu <command>` looks for in the current directory."""
 
 DEFAULT_ROOT_DIR = pathlib.Path(".")
+"""Default project root used when resolving relative paths for config and
+input files.
+"""
