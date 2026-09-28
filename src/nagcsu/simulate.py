@@ -187,7 +187,7 @@ def run(
                 flow_executable,
                 deck_arg,
                 f"--output-dir={output_dir_arg}",
-                "--threads-per-process=32",
+                "--threads-per-process=8",
                 *(extra_args or []),
             ],
             cwd=working_directory,
