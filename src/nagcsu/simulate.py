@@ -13,6 +13,12 @@ import typing
 
 from nagcsu.exceptions import RunOutputNotFoundError, SimulationError
 
+THREADS_OPTION = "--threads-per-process"
+"""OPM Flow's command-line option for its per-process thread count."""
+
+DEFAULT_THREADS_PER_PROCESS = 8
+"""Thread count used when a caller does not choose one."""
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class RunResult:
@@ -130,6 +136,7 @@ def run(
     output_dir: pathlib.Path | str,
     *,
     flow_executable: str = "flow",
+    threads_per_process: int | None = DEFAULT_THREADS_PER_PROCESS,
     extra_args: list[str] | None = None,
     extra_mounts: list[str] | None = None,
     timeout_seconds: float | None = None,
@@ -150,6 +157,15 @@ def run(
     report step) is returned as a normal `RunResult` so the caller can
     inspect `prt.parse(result.prt_path)` to see how far it got.
 
+    :param threads_per_process: Value for Flow's
+        `--threads-per-process` option. `None` omits the option and
+        leaves Flow's own default in place. Ignored if `extra_args`
+        already contains its own `--threads-per-process`, so an explicit
+        flag there always wins and Flow never sees the option twice.
+    :param extra_args: Additional command-line arguments appended after
+        the ones this function builds, for example
+        `["--enable-tuning=true", "--solver-max-time-step-in-days=30"]`.
+        See `nagcsu.config.ProjectConfig.extra_args`.
     :param extra_mounts: Host directories a Docker-wrapped `flow` needs
         to see beyond `deck_path` and `output_dir`'s common parent, for
         example because the deck has an `INCLUDE` pointing elsewhere.
@@ -175,6 +191,12 @@ def run(
         deck_arg = str(deck_path.resolve())
         output_dir_arg = str(output_dir.resolve())
 
+    extra_flow_args = list(extra_args or [])
+    threads_args: list[str] = []
+    user_sets_threads = any(arg.startswith(THREADS_OPTION) for arg in extra_flow_args)
+    if threads_per_process is not None and not user_sets_threads:
+        threads_args = [f"{THREADS_OPTION}={threads_per_process}"]
+
     env = os.environ.copy()
     if extra_mounts:
         env["OPM_FLOW_EXTRA_MOUNTS"] = format_extra_mounts_env(extra_mounts)
@@ -187,8 +209,8 @@ def run(
                 flow_executable,
                 deck_arg,
                 f"--output-dir={output_dir_arg}",
-                "--threads-per-process=8",
-                *(extra_args or []),
+                *threads_args,
+                *extra_flow_args,
             ],
             cwd=working_directory,
             env=env,

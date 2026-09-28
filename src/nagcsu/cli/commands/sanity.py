@@ -63,7 +63,9 @@ def check_init(ctx: click.Context, run_id: str | None, tolerance: float) -> None
         f"(tolerance +{report.tolerance:.4f})"
     )
     if report.is_plausible:
-        click.echo("  PLAUSIBLE: starts near connate water saturation, as a fresh reservoir should.")
+        click.echo(
+            "  PLAUSIBLE: starts near connate water saturation, as a fresh reservoir should."
+        )
         return
 
     click.echo(

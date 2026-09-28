@@ -133,3 +133,73 @@ def test_run_captures_and_forwards_both_output_streams(
     assert "FLOW STDERR" in result.stderr
     assert "CWD:" in console_output.out
     assert "FLOW STDERR" in console_output.err
+
+
+def get_flow_args(result: simulate.RunResult) -> list[str]:
+    args_line = next(line for line in result.stdout.splitlines() if line.startswith("ARGS:"))
+    return args_line[len("ARGS:") :].split("|")
+
+
+def test_run_passes_the_default_thread_count(tmp_path, fake_flow_executable: pathlib.Path) -> None:
+    deck_path = tmp_path / "deck.DATA"
+    deck_path.write_text("dummy deck")
+
+    result = simulate.run(
+        deck_path, tmp_path / "runs" / "run_0001", flow_executable=str(fake_flow_executable)
+    )
+
+    assert "--threads-per-process=8" in get_flow_args(result)
+
+
+def test_run_uses_the_requested_thread_count_and_appends_extra_args(
+    tmp_path, fake_flow_executable: pathlib.Path
+) -> None:
+    deck_path = tmp_path / "deck.DATA"
+    deck_path.write_text("dummy deck")
+
+    result = simulate.run(
+        deck_path,
+        tmp_path / "runs" / "run_0001",
+        flow_executable=str(fake_flow_executable),
+        threads_per_process=4,
+        extra_args=["--enable-tuning=true", "--solver-max-time-step-in-days=30"],
+    )
+    args = get_flow_args(result)
+
+    assert "--threads-per-process=4" in args
+    assert "--threads-per-process=8" not in args
+    assert args[-2:] == ["--enable-tuning=true", "--solver-max-time-step-in-days=30"]
+
+
+def test_run_omits_the_thread_option_when_threads_is_none(
+    tmp_path, fake_flow_executable: pathlib.Path
+) -> None:
+    deck_path = tmp_path / "deck.DATA"
+    deck_path.write_text("dummy deck")
+
+    result = simulate.run(
+        deck_path,
+        tmp_path / "runs" / "run_0001",
+        flow_executable=str(fake_flow_executable),
+        threads_per_process=None,
+    )
+
+    assert not any(arg.startswith("--threads-per-process") for arg in get_flow_args(result))
+
+
+def test_run_lets_an_explicit_thread_flag_in_extra_args_win(
+    tmp_path, fake_flow_executable: pathlib.Path
+) -> None:
+    deck_path = tmp_path / "deck.DATA"
+    deck_path.write_text("dummy deck")
+
+    result = simulate.run(
+        deck_path,
+        tmp_path / "runs" / "run_0001",
+        flow_executable=str(fake_flow_executable),
+        threads_per_process=8,
+        extra_args=["--threads-per-process=2"],
+    )
+    thread_args = [arg for arg in get_flow_args(result) if arg.startswith("--threads-per-process")]
+
+    assert thread_args == ["--threads-per-process=2"]

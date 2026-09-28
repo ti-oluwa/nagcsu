@@ -14,7 +14,7 @@ import typing
 
 import yaml
 
-from nagcsu import constants
+from nagcsu import constants, simulate
 
 
 @dataclasses.dataclass(slots=True)
@@ -107,6 +107,21 @@ class ProjectConfig:
     needs to change between the two.
     """
 
+    threads_per_process: int | None = simulate.DEFAULT_THREADS_PER_PROCESS
+    """Value passed to OPM Flow's `--threads-per-process` option for
+    every run. Set to `None` (`null` in YAML) to omit the option and
+    use Flow's own default. Ignored if `extra_args` sets
+    `--threads-per-process` itself.
+    """
+
+    extra_args: list[str] = dataclasses.field(default_factory=list)
+    """Extra command-line arguments appended to every OPM Flow
+    invocation, one list entry per argument, for example
+    `["--enable-tuning=true", "--solver-max-time-step-in-days=30"]`.
+    Passed through untouched, so a typo is Flow's error to report, not
+    this project's.
+    """
+
     extra_mounts: list[str] = dataclasses.field(default_factory=list)
     """Extra host directories a Docker-wrapped `flow` needs to see,
     beyond the deck and each run's output directory (which
@@ -160,6 +175,12 @@ class ProjectConfig:
             )
         if not self.wells:
             raise ValueError("At least one well must be configured to score against")
+        if self.threads_per_process is not None and self.threads_per_process < 1:
+            raise ValueError(
+                f"threads_per_process must be at least 1 (or null), got {self.threads_per_process}"
+            )
+        if not all(isinstance(argument, str) for argument in self.extra_args):
+            raise ValueError(f"extra_args must be a list of strings, got {self.extra_args!r}")
 
 
 def load(config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE) -> ProjectConfig:
@@ -203,6 +224,8 @@ def load(config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE) -> Pro
         output_root=pathlib.Path(raw.get("output_root", constants.DEFAULT_OUTPUT_DIR)),
         ledger_path=pathlib.Path(raw.get("ledger_path", constants.DEFAULT_LEDGER_PATH)),
         flow_executable=raw.get("flow_executable", "flow"),
+        threads_per_process=raw.get("threads_per_process", simulate.DEFAULT_THREADS_PER_PROCESS),
+        extra_args=[str(argument) for argument in raw.get("extra_args", [])],
         extra_mounts=list(raw.get("extra_mounts", [])),
         wells=tuple(raw.get("wells", constants.PRODUCER_WELLS)),
         objective=objective,
@@ -231,6 +254,8 @@ def save(
         "output_root": str(config.output_root),
         "ledger_path": str(config.ledger_path),
         "flow_executable": config.flow_executable,
+        "threads_per_process": config.threads_per_process,
+        "extra_args": list(config.extra_args),
         "extra_mounts": list(config.extra_mounts),
         "wells": list(config.wells),
         "objective": {

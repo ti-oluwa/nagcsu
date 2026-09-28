@@ -141,24 +141,20 @@ def test_make_evaluate_with_breakdown_reports_the_j_and_vector_nrmse_make_evalua
         )
 
     def fake_load_summary(case_basename, *, wells=None):
-        return pandas.DataFrame(
-            {
-                "DATE": pandas.date_range("1976-01-01", periods=2, freq="YS"),
-                "FPR": [2751.0, 2700.0],
-                "FWCT": [0.0, 0.05],
-                "FGOR": [818.0, 820.0],
-            }
-        )
+        return pandas.DataFrame({
+            "DATE": pandas.date_range("1976-01-01", periods=2, freq="YS"),
+            "FPR": [2751.0, 2700.0],
+            "FWCT": [0.0, 0.05],
+            "FGOR": [818.0, 820.0],
+        })
 
     def fake_load_observed_history(path, **kwargs):
-        return pandas.DataFrame(
-            {
-                "DATE": pandas.date_range("1976-01-01", periods=2, freq="YS"),
-                "FPR": [2751.0, 2695.0],
-                "FWCT": [0.0, 0.04],
-                "FGOR": [818.0, 819.0],
-            }
-        )
+        return pandas.DataFrame({
+            "DATE": pandas.date_range("1976-01-01", periods=2, freq="YS"),
+            "FPR": [2751.0, 2695.0],
+            "FWCT": [0.0, 0.04],
+            "FGOR": [818.0, 819.0],
+        })
 
     monkeypatch.setattr(pipeline.simulate, "run", fake_simulate_run)
     monkeypatch.setattr(pipeline.summary, "load_summary", fake_load_summary)

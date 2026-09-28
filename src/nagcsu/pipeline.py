@@ -86,6 +86,8 @@ def execute_run(
             deck_path,
             output_dir,
             flow_executable=config.flow_executable,
+            threads_per_process=config.threads_per_process,
+            extra_args=config.extra_args or None,
             extra_mounts=config.extra_mounts or None,
         )
     except SimulationError as error:

@@ -140,7 +140,7 @@ NOECHO
 -- --- API=41.9, gas SG=0.68, T=179 degF. See Dataset Documentation
 -- --- Table 2 for the full correlation form and calibration factors.
 PVTO
--- Rs(Mscf/stb as scf/stb)   Pbub(psia)   Bo(rb/stb)   Vis(cp)
+-- Rs(Mscf/stb)   Pbub(psia)   Bo(rb/stb)   Vis(cp)
    0.022410     114.70    1.0663   1.0817
              414.70    1.0249   1.3117
              714.70    0.9835   1.4233 /
