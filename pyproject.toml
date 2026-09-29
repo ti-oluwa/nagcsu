@@ -42,6 +42,7 @@ dependencies = [
     "numpy>=1.26",
     "openpyxl>=3.1",
     "pandas>=2.2",
+    "plotly>=5.20",
     "pyyaml>=6.0",
     "res2df>=1.0",
     "resfo>=4.0",

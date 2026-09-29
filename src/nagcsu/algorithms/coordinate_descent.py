@@ -38,8 +38,8 @@ class GroupOutcome:
 
 def search(
     base_state: dict[str, float],
-    groups_in_order: list[str],
-    bounds_by_group: dict[str, dict[str, tuple[float, float]]],
+    groups: list[str],
+    group_parameter_bounds: dict[str, dict[str, tuple[float, float]]],
     evaluate: EvaluateFunction,
     *,
     target_j: float,
@@ -48,13 +48,13 @@ def search(
     max_evaluations_per_parameter: int = DEFAULT_MAX_EVALUATIONS_PER_PARAMETER,
     min_relative_improvement: float = DEFAULT_MIN_RELATIVE_IMPROVEMENT,
 ) -> tuple[SearchResult, list[GroupOutcome]]:
-    """Tune `groups_in_order` one at a time until `target_j` is reached.
+    """Tune `groups` one at a time until `target_j` is reached.
 
     :param base_state: Starting parameter state, normally
         `nagcsu.parameters.default_state`.
-    :param groups_in_order: Tuning priority order, normally
-        `nagcsu.constants.TUNING_PRIORITY_ORDER`.
-    :param bounds_by_group: `{parameter: (low, high)}` for every
+    :param groups: Tuning priority order, normally
+        `nagcsu.constants.GROUP_TUNING_PRIORITY_ORDER`.
+    :param group_parameter_bounds: `{parameter: (low, high)}` for every
         parameter in each group, keyed by group name.
     :param target_j: Stop as soon as the best J found is at or below this.
     :param passes_per_group: How many full cycles through a group's
@@ -88,11 +88,11 @@ def search(
     trials.append(Trial(state=dict(current_best_state), j=current_best_j))
 
     outcomes: list[GroupOutcome] = []
-    for group in groups_in_order:
+    for group in groups:
         if current_best_j <= target_j:
             break
 
-        group_bounds = bounds_by_group.get(group, {})
+        group_bounds = group_parameter_bounds.get(group, {})
         if not group_bounds:
             continue
 
@@ -104,8 +104,13 @@ def search(
             for parameter, (low, high) in group_bounds.items():
 
                 def objective_along_one_axis(value: float, name: str = parameter) -> float:
+                    # scipy calls this with numpy.float64 values; cast
+                    # to native float immediately so every trial logged
+                    # from here down, not just the group's eventual best,
+                    # is plain-Python and safe for `write_parameters_snapshot`
+                    # to yaml.safe_dump.
                     candidate_state = dict(current_best_state)
-                    candidate_state[name] = value
+                    candidate_state[name] = float(value)
                     j = evaluate(candidate_state)
                     trials.append(Trial(state=dict(candidate_state), j=j))
                     return j
@@ -120,8 +125,13 @@ def search(
                     },
                 )
                 if result.fun < current_best_j:  # type: ignore[attr-defined]
-                    current_best_state[parameter] = result.x  # type: ignore[attr-defined]
-                    current_best_j = result.fun  # type: ignore[attr-defined]
+                    # scipy returns numpy scalars here; cast to native
+                    # float so this state stays plain-Python all the way
+                    # out to `write_parameters_snapshot`'s YAML dump,
+                    # which PyYAML's SafeDumper cannot serialize a
+                    # numpy.float64 through.
+                    current_best_state[parameter] = float(result.x)  # type: ignore[attr-defined]
+                    current_best_j = float(result.fun)  # type: ignore[attr-defined]
 
             if (j_before_pass - current_best_j) < j_before_pass * min_relative_improvement:
                 break
@@ -144,8 +154,8 @@ def search(
 
 def multi_start_search(
     base_state: dict[str, float],
-    groups_in_order: list[str],
-    bounds_by_group: dict[str, dict[str, tuple[float, float]]],
+    groups: list[str],
+    group_parameter_bounds: dict[str, dict[str, tuple[float, float]]],
     evaluate: EvaluateFunction,
     *,
     target_j: float,
@@ -167,7 +177,7 @@ def multi_start_search(
     to a poor local optimum without ever finding the basin containing a
     much better one, and no amount of retuning from that same starting
     point escapes it. Re-running `search` from several different,
-    randomly chosen starting states within `bounds_by_group`, and
+    randomly chosen starting states within `group_parameter_bounds`, and
     keeping whichever run reached the lowest `J`, is a cheap,
     dependency-free way to cover more of the parameter space than a
     single start can, without changing anything about how any one start
@@ -188,8 +198,8 @@ def multi_start_search(
     """
     best_result, best_outcomes = search(
         base_state,
-        groups_in_order,
-        bounds_by_group,
+        groups,
+        group_parameter_bounds,
         evaluate,
         target_j=target_j,
         passes_per_group=passes_per_group,
@@ -204,14 +214,14 @@ def multi_start_search(
             break
 
         random_state = dict(base_state)
-        for group_bounds in bounds_by_group.values():
+        for group_bounds in group_parameter_bounds.values():
             for parameter, (low, high) in group_bounds.items():
                 random_state[parameter] = rng.uniform(low, high)
 
         result, outcomes = search(
             random_state,
-            groups_in_order,
-            bounds_by_group,
+            groups,
+            group_parameter_bounds,
             evaluate,
             target_j=target_j,
             passes_per_group=passes_per_group,

@@ -1,0 +1,1433 @@
+
+
+
+ ########  #          ######   #           #
+ #         #         #      #   #         # 
+ #####     #         #      #    #   #   #  
+ #         #         #      #     # # # #   
+ #         #######    ######       #   #    
+
+Flow is a simulator for fully implicit three-phase black-oil flow, and is part of OPM.
+For more information visit: https://opm-project.org 
+
+Flow Version     =  2026.04 (Ubuntu 24.04.4 LTS: 2026.04-1~noble)
+Machine name     =  6b51fd6fa672 (Number of logical cores: 8, Memory size: 15852.32 MB) 
+Operating system =  Linux x86_64 (Kernel: 7.2.7-200.fc44.x86_64, #1 SMP PREEMPT_DYNAMIC Mon Sep 21 18:25:57 UTC 2026 )
+Build time       =  
+Simulation started on 28-09-2026 at 20:42:25 hrs
+Using 1 MPI processes with 16 OMP threads on each 
+Parameters used by Flow:
+# [known parameters which were specified at run-time]
+EclDeckFileName="NigerDelta UGH1 Composite Field.DATA" # default: ""
+OutputDir="." # default: ""
+ThreadsPerProcess="16" # default: "2"
+EnableTuning="true" # default: "0"
+SolverMaxTimeStepInDays="30" # default: "365"
+# [parameters which were specified at compile-time]
+AcceleratorMode="none"
+ActionParsingStrictness="normal"
+AddCorners="0"
+AllowDistributedWells="0"
+AllowSplittingInactiveWells="1"
+AlternativeWellRateInit="1"
+CheckGroupConstraintsInnerWellIterations="1"
+CheckSatfuncConsistency="1"
+ConserveInnerEnergyThermal="0"
+ContinueOnConvergenceError="0"
+ConvergenceMonitoring="0"
+ConvergenceMonitoringCutOff="6"
+ConvergenceMonitoringDecayFactor="0.75"
+CprReuseInterval="30"
+CprReuseSetup="4"
+CprWeightsThreadParallel="0"
+DbhpMaxRel="1"
+DebugEmitCellPartition="0"
+DebugVerbosityLevel="1"
+DpMaxRel="0.3"
+DsMax="0.2"
+DwellFractionMax="0.2"
+EclOutputDoublePrecision="0"
+EclOutputInterval="-1"
+EdgeConformal="0"
+EdgeWeightsMethod="transmissibility"
+EnableAdaptiveTimeStepping="1"
+EnableAsyncEclOutput="1"
+EnableAsyncVtkOutput="1"
+EnableDriftCompensation="0"
+EnableDriftCompensationTemp="1"
+EnableDryRun="auto"
+EnableEclOutput="1"
+EnableEsmry="1"
+EnableGravity="1"
+EnableGridAdaptation="0"
+EnableIntensiveQuantityCache="1"
+EnableLoggingFalloutWarning="0"
+EnableOpmRstFile="0"
+EnableStorageCache="1"
+EnableTerminalOutput="1"
+EnableThermodynamicHints="0"
+EnableVtkOutput="0"
+EnableWellOperabilityCheck="1"
+EnableWellOperabilityCheckIter="0"
+EnableWriteAllSolutions="0"
+EndTime="1e+100"
+ExplicitRockCompaction="0"
+ExternalPartition=""
+ForceDisableFluidInPlaceOutput="0"
+ForceDisableResvFluidInPlaceOutput="0"
+FullTimeStepInitially="0"
+GpuAwareMpi="0"
+GpuDeviceId="0"
+HybridNewtonConfigFile="hybridNewtonConfig.json"
+IgnoreKeywords=""
+IluFillinLevel="0"
+IluRedblack="0"
+IluRelaxation="0.9"
+IluReorderSpheres="0"
+ImbalanceTol="1.1"
+InitialTimeStepInDays="1"
+InitialTimeStepSize="86400"
+InjMultDampMult="0.9"
+InjMultMinDampFactor="0.05"
+InjMultOscThreshold="0.1"
+InputSkipMode="100"
+LinearSolver="cprw"
+LinearSolverAccelerator="cpu"
+LinearSolverIgnoreConvergenceFailure="0"
+LinearSolverMaxIter="200"
+LinearSolverPrintJsonDefinition="1"
+LinearSolverReduction="0.01"
+LinearSolverRestart="40"
+LinearSolverVerbosity="0"
+LoadFile=""
+LoadStep="-1"
+LocalDomainsOrderingMeasure="maxpressure"
+LocalDomainsPartitionWellNeighborLevels="1"
+LocalDomainsPartitioningImbalance="1.03"
+LocalDomainsPartitioningMethod="zoltan"
+LocalSolveApproach="gauss-seidel"
+LocalToleranceScalingCnv="0.1"
+LocalToleranceScalingMb="1"
+LocalWellSolveControlSwitching="1"
+MatrixAddWellContributions="0"
+MaxInnerIterMsWells="100"
+MaxInnerIterWells="50"
+MaxLocalSolveIterations="20"
+MaxNewtonIterationsWithInnerWellIterations="99"
+MaxPressureChangeMsWells="1e+06"
+MaxResidualAllowed="1e+07"
+MaxSinglePrecisionDays="20"
+MaxTemperatureChange="5"
+MaxTimeStepDivisions="10"
+MaxTimeStepSize="inf"
+MaxWellStatusSwitchForWells="99"
+MaxWellStatusSwitchInInnerIterWells="99"
+MaxWelleqIter="30"
+MaximumNumberOfGroupSwitches="3"
+MaximumNumberOfWellSwitches="3"
+MaximumWaterSaturation="1"
+MetisParams="default"
+MiluVariant="ilu"
+MinStrictCnvIter="-1"
+MinStrictMbIter="-1"
+MinTimeStepBasedOnNewtonIterations="0"
+MinTimeStepBeforeShuttingProblematicWellsInDays="0.01"
+MinTimeStepSize="0"
+NetworkMaxOuterIterations="3"
+NetworkMaxPressureUpdateInBars="5"
+NetworkMaxStrictOuterIterations="10"
+NetworkMaxSubIterations="100"
+NetworkPressureUpdateDampingFactor="0.1"
+NewtonMaxError="1e+100"
+NewtonMaxIterations="20"
+NewtonMaxRelax="0.5"
+NewtonMinIterations="2"
+NewtonRelaxationType="dampen"
+NewtonTargetIterations="10"
+NewtonTolerance="0.01"
+NewtonVerbose="1"
+NewtonWriteConvergence="0"
+NlddLocalLinearSolver="ilu0"
+NlddLocalLinearSolverMaxIter="200"
+NlddLocalLinearSolverReduction="0.01"
+NlddNumInitialNewtonIter="1"
+NlddRelativeMobilityChangeTol="0.1"
+NonlinearSolver="newton"
+NumLocalDomains="0"
+NumOverlap="1"
+NumPressurePointsEquil="2000"
+NumSatfuncConsistencySamplePoints="5"
+NupcolGroupRateTolerance="0.001"
+OpenclIluParallel="1"
+OpenclPlatformId="0"
+OutputExtraConvergenceInfo="none"
+OutputInterval="1"
+OutputMode="all"
+OwnerCellsFirst="1"
+ParameterFile=""
+ParsingStrictness="normal"
+PartitionMethod="zoltanwell"
+PreSolveNetwork="1"
+PredeterminedTimeStepsFile=""
+PressureMax="1e+99"
+PressureMin="-1e+99"
+PressureScale="1"
+PriVarOscilationThreshold="1e-05"
+PrintParameters="2"
+ProjectSaturations="0"
+RegularizationFactorWells="100"
+RelaxedLinearSolverReduction="0.01"
+RelaxedMaxPvFraction="0.03"
+RelaxedPressureTolMsw="10000"
+RelaxedWellFlowTol="0.001"
+RestartTime="-1e+35"
+RestartWritingInterval="16777215"
+SaveFile=""
+SaveStep=""
+ScaleLinearSystem="0"
+SchedRestart="0"
+SerialPartitioning="0"
+ShutUnsolvableWells="1"
+Slave="0"
+SolveWelleqInitially="1"
+SolverContinueOnConvergenceFailure="0"
+SolverGrowthFactor="2"
+SolverMaxGrowth="3"
+SolverMaxRestarts="10"
+SolverMinTimeStep="1e-12"
+SolverRestartFactor="0.33"
+SolverVerbosity="1"
+StrictInnerIterWells="40"
+StrictOuterIterWells="6"
+TemperatureMax="1e+09"
+TemperatureMin="0"
+TimeStepAfterEventInDays="-1"
+TimeStepControl="pid+newtoniteration"
+TimeStepControlDecayDampingFactor="1"
+TimeStepControlDecayRate="0.75"
+TimeStepControlFileName="timesteps"
+TimeStepControlGrowthDampingFactor="3.2"
+TimeStepControlGrowthRate="1.25"
+TimeStepControlMaxReductionTimeStep="0.1"
+TimeStepControlParameters="0.125;0.25;0.125;0.75;0.25"
+TimeStepControlRejectCompletedStep="0"
+TimeStepControlSafetyFactor="0.8"
+TimeStepControlTargetIterations="30"
+TimeStepControlTargetNewtonIterations="8"
+TimeStepControlTolerance="0.1"
+TimeStepControlToleranceTestVersion="standard"
+TimeStepVerbosity="1"
+ToleranceCnv="0.01"
+ToleranceCnvEnergy="0.4182"
+ToleranceCnvEnergyRelaxed="41.82"
+ToleranceCnvRelaxed="1"
+ToleranceEnergyBalance="4.182e-06"
+ToleranceEnergyBalanceRelaxed="4.182e-05"
+ToleranceMaxDp="0"
+ToleranceMaxDrs="0"
+ToleranceMaxDrv="0"
+ToleranceMaxDs="0"
+ToleranceMb="1e-07"
+ToleranceMbRelaxed="1e-06"
+TolerancePressureMsWells="1000"
+ToleranceWellControl="1e-07"
+ToleranceWells="0.0001"
+TpsaIluFillinLevel="0"
+TpsaIluRelaxation="0.9"
+TpsaLinearSolver="ilu0"
+TpsaLinearSolverIgnoreConvergenceFailure="0"
+TpsaLinearSolverMaxIter="200"
+TpsaLinearSolverPrintJsonDefinition="0"
+TpsaLinearSolverReduction="0.001"
+TpsaLinearSolverRestart="40"
+TpsaLinearSolverVerbosity="0"
+TpsaNewtonMaxError="1e+100"
+TpsaNewtonMaxIterations="20"
+TpsaNewtonMinIterations="1"
+TpsaNewtonTargetIterations="10"
+TpsaNewtonTolerance="0.001"
+TpsaNewtonVerbosity="1"
+TpsaRelaxedLinearSolverReduction="0.001"
+TpsaUseGmres="0"
+UpdateEquationsScaling="0"
+UseAverageDensityMsWells="0"
+UseGmres="0"
+UseHybridNewton="0"
+UseImplicitIpr="1"
+UseMultisegmentWell="1"
+UseUpdateStabilization="1"
+VerifyGpuAwareMpi="0"
+VtkWriteAverageMolarMasses="0"
+VtkWriteDensities="1"
+VtkWriteDiffusionCoefficients="0"
+VtkWriteDofIndex="0"
+VtkWriteEffectiveDiffusionCoefficients="0"
+VtkWriteExtrusionFactor="0"
+VtkWriteFilterVelocities="0"
+VtkWriteFugacities="0"
+VtkWriteFugacityCoeffs="0"
+VtkWriteGasDissolutionFactor="0"
+VtkWriteGasFormationVolumeFactor="0"
+VtkWriteGasSaturationPressure="0"
+VtkWriteIntrinsicPermeabilities="0"
+VtkWriteMassFractions="0"
+VtkWriteMobilities="0"
+VtkWriteMolarities="0"
+VtkWriteMoleFractions="1"
+VtkWriteOilFormationVolumeFactor="0"
+VtkWriteOilSaturationPressure="0"
+VtkWriteOilVaporizationFactor="0"
+VtkWritePorosity="1"
+VtkWritePotentialGradients="0"
+VtkWritePressures="1"
+VtkWritePrimaryVars="0"
+VtkWritePrimaryVarsMeaning="0"
+VtkWriteProcessRank="0"
+VtkWriteRelativePermeabilities="1"
+VtkWriteSaturatedGasOilVaporizationFactor="0"
+VtkWriteSaturatedOilGasDissolutionFactor="0"
+VtkWriteSaturationRatios="0"
+VtkWriteSaturations="1"
+VtkWriteTemperature="1"
+VtkWriteTortuosities="0"
+VtkWriteTotalMassFractions="0"
+VtkWriteTotalMoleFractions="0"
+VtkWriteTracerConcentration="0"
+VtkWriteViscosities="0"
+VtkWriteWaterFormationVolumeFactor="0"
+WaterOnlyThreshold="1"
+WellGroupConstraintsMaxIterations="1"
+ZoltanImbalanceTol="1.1"
+ZoltanParams="graph"
+ZoltanPhgEdgeSizeThreshold="0.35"
+
+Reading deck file 'NigerDelta UGH1 Composite Field.DATA'
+    0 Reading RUNSPEC  in NigerDelta UGH1 Composite Field.DATA line 18
+    1 Reading TITLE    in NigerDelta UGH1 Composite Field.DATA line 20
+    2 Reading DIMENS   in NigerDelta UGH1 Composite Field.DATA line 23
+    3 Reading OIL      in NigerDelta UGH1 Composite Field.DATA line 26
+    4 Reading GAS      in NigerDelta UGH1 Composite Field.DATA line 27
+    5 Reading WATER    in NigerDelta UGH1 Composite Field.DATA line 28
+    6 Reading DISGAS   in NigerDelta UGH1 Composite Field.DATA line 29
+    7 Reading FIELD    in NigerDelta UGH1 Composite Field.DATA line 31
+    8 Reading TABDIMS  in NigerDelta UGH1 Composite Field.DATA line 33
+    9 Reading WELLDIMS in NigerDelta UGH1 Composite Field.DATA line 36
+   10 Reading AQUDIMS  in NigerDelta UGH1 Composite Field.DATA line 39
+   11 Reading EQLDIMS  in NigerDelta UGH1 Composite Field.DATA line 42
+   12 Reading START    in NigerDelta UGH1 Composite Field.DATA line 46
+   13 Reading NSTACK   in NigerDelta UGH1 Composite Field.DATA line 49
+   14 Reading UNIFOUT  in NigerDelta UGH1 Composite Field.DATA line 52
+   15 Reading UNIFIN   in NigerDelta UGH1 Composite Field.DATA line 53
+   16 Reading GRID     in NigerDelta UGH1 Composite Field.DATA line 56
+   17 Reading NOECHO   in NigerDelta UGH1 Composite Field.DATA line 58
+   18 Reading DX       in NigerDelta UGH1 Composite Field.DATA line 60
+   19 Reading DY       in NigerDelta UGH1 Composite Field.DATA line 62
+   20 Reading TOPS     in NigerDelta UGH1 Composite Field.DATA line 65
+   21 Reading DZ       in NigerDelta UGH1 Composite Field.DATA line 68
+   22 Reading EQUALS   in NigerDelta UGH1 Composite Field.DATA line 75
+   23 Reading MULTIPLY in NigerDelta UGH1 Composite Field.DATA line 106
+   24 Reading AQUCT    in NigerDelta UGH1 Composite Field.DATA line 117
+   25 Reading AQUANCON in NigerDelta UGH1 Composite Field.DATA line 122
+   26 Reading ECHO     in NigerDelta UGH1 Composite Field.DATA line 126
+   27 Reading RPTGRID  in NigerDelta UGH1 Composite Field.DATA line 128
+   28 Reading PROPS    in NigerDelta UGH1 Composite Field.DATA line 132
+   29 Reading NOECHO   in NigerDelta UGH1 Composite Field.DATA line 134
+   30 Reading PVTO     in NigerDelta UGH1 Composite Field.DATA line 142
+   31 Reading PVDG     in NigerDelta UGH1 Composite Field.DATA line 233
+   32 Reading PVTW     in NigerDelta UGH1 Composite Field.DATA line 255
+   33 Reading ROCK     in NigerDelta UGH1 Composite Field.DATA line 260
+   34 Reading DENSITY  in NigerDelta UGH1 Composite Field.DATA line 264
+   35 Reading SWOF     in NigerDelta UGH1 Composite Field.DATA line 272
+   36 Reading SGOF     in NigerDelta UGH1 Composite Field.DATA line 295
+   37 Reading ECHO     in NigerDelta UGH1 Composite Field.DATA line 314
+   38 Reading REGIONS  in NigerDelta UGH1 Composite Field.DATA line 317
+   39 Reading SATNUM   in NigerDelta UGH1 Composite Field.DATA line 319
+   40 Reading PVTNUM   in NigerDelta UGH1 Composite Field.DATA line 321
+   41 Reading EQLNUM   in NigerDelta UGH1 Composite Field.DATA line 323
+   42 Reading SOLUTION in NigerDelta UGH1 Composite Field.DATA line 327
+   43 Reading EQUIL    in NigerDelta UGH1 Composite Field.DATA line 334
+   44 Reading RSVD     in NigerDelta UGH1 Composite Field.DATA line 338
+   45 Reading RPTSOL   in NigerDelta UGH1 Composite Field.DATA line 342
+   46 Reading SUMMARY  in NigerDelta UGH1 Composite Field.DATA line 346
+   47 Reading FOPR     in NigerDelta UGH1 Composite Field.DATA line 348
+   48 Reading FGPR     in NigerDelta UGH1 Composite Field.DATA line 349
+   49 Reading FWPR     in NigerDelta UGH1 Composite Field.DATA line 350
+   50 Reading FWCT     in NigerDelta UGH1 Composite Field.DATA line 351
+   51 Reading FGOR     in NigerDelta UGH1 Composite Field.DATA line 352
+   52 Reading FPR      in NigerDelta UGH1 Composite Field.DATA line 353
+   53 Reading FOPT     in NigerDelta UGH1 Composite Field.DATA line 354
+   54 Reading FGPT     in NigerDelta UGH1 Composite Field.DATA line 355
+   55 Reading FWPT     in NigerDelta UGH1 Composite Field.DATA line 356
+   56 Reading FAQR     in NigerDelta UGH1 Composite Field.DATA line 357
+   57 Reading FAQT     in NigerDelta UGH1 Composite Field.DATA line 358
+   58 Reading WOPR     in NigerDelta UGH1 Composite Field.DATA line 359
+   59 Reading WWCT     in NigerDelta UGH1 Composite Field.DATA line 361
+   60 Reading WBHP     in NigerDelta UGH1 Composite Field.DATA line 363
+   61 Reading WGOR     in NigerDelta UGH1 Composite Field.DATA line 365
+   62 Reading ALL      in NigerDelta UGH1 Composite Field.DATA line 367
+   63 Reading SCHEDULE in NigerDelta UGH1 Composite Field.DATA line 370
+   64 Reading RPTSCHED in NigerDelta UGH1 Composite Field.DATA line 372
+   65 Reading RPTRST   in NigerDelta UGH1 Composite Field.DATA line 375
+   66 Reading WELSPECS in NigerDelta UGH1 Composite Field.DATA line 378
+   67 Reading COMPDAT  in NigerDelta UGH1 Composite Field.DATA line 389
+   68 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 405
+   69 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 416
+   70 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 420
+   71 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 431
+   72 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 435
+   73 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 446
+   74 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 450
+   75 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 461
+   76 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 465
+   77 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 476
+   78 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 480
+   79 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 491
+   80 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 495
+   81 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 506
+   82 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 510
+   83 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 521
+   84 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 525
+   85 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 536
+   86 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 540
+   87 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 551
+   88 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 555
+   89 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 566
+   90 Reading WCONPROD in NigerDelta UGH1 Composite Field.DATA line 570
+   91 Reading DATES    in NigerDelta UGH1 Composite Field.DATA line 581
+   92 Reading WELSPECS in NigerDelta UGH1 Composite Field.DATA line 592
+   93 Reading COMPDAT  in NigerDelta UGH1 Composite Field.DATA line 596
+   94 Reading WCONINJE in NigerDelta UGH1 Composite Field.DATA line 606
+
+Warning: Unsupported keywords or keyword items:
+
+  NSTACK: keyword not supported
+  In file: NigerDelta UGH1 Composite Field.DATA, line 49
+
+  NOECHO: keyword not supported
+  In file: NigerDelta UGH1 Composite Field.DATA, line 58
+
+  ECHO: keyword not supported
+  In file: NigerDelta UGH1 Composite Field.DATA, line 126
+
+  RPTGRID: keyword not supported
+  In file: NigerDelta UGH1 Composite Field.DATA, line 128
+
+  NOECHO: keyword not supported
+  In file: NigerDelta UGH1 Composite Field.DATA, line 134
+
+  ECHO: keyword not supported
+  In file: NigerDelta UGH1 Composite Field.DATA, line 314
+
+  RPTSOL: keyword not supported
+  In file: NigerDelta UGH1 Composite Field.DATA, line 342
+
+Warning: The ALL CAPS case: NIGERDELTA UGH1 COMPOSITE FIELD will be used when writing output files from this simulation.
+
+Creating grid from keywords DX, DY, DZ and TOPS
+Initializing Carter Tracey aquifers from AQUCT in NigerDelta UGH1 Composite Field.DATA line 117
+3 fluid phases are active
+Initializing aquifer connections from AQUANCON in NigerDelta UGH1 Composite Field.DATA line 122
+
+Processing dynamic information from
+NigerDelta UGH1 Composite Field.DATA line 370
+Initializing report step 0/12 at 1976-01-01 0 DAYS line 370
+Processing keyword RPTSCHED at line 372
+Processing keyword RPTRST at line 375
+Processing keyword WELSPECS at line 378
+Processing keyword COMPDAT at line 389
+Processing keyword WCONPROD at line 405
+Complete report step 1 (731 DAYS) at 1978-01-01 (0 DAYS)
+
+Initializing report step 2/12 at 1978-01-01 (0 DAYS) line 416
+Processing keyword WCONPROD at line 420
+Complete report step 2 (730 DAYS) at 1980-01-01 (731 DAYS)
+
+Initializing report step 3/12 at 1980-01-01 (731 DAYS) line 431
+Processing keyword WCONPROD at line 435
+Complete report step 3 (1827 DAYS) at 1985-01-01 (1461 DAYS)
+
+Initializing report step 4/12 at 1985-01-01 (1461 DAYS) line 446
+Processing keyword WCONPROD at line 450
+Complete report step 4 (1826 DAYS) at 1990-01-01 (3288 DAYS)
+
+Initializing report step 5/12 at 1990-01-01 (3288 DAYS) line 461
+Processing keyword WCONPROD at line 465
+Complete report step 5 (1826 DAYS) at 1995-01-01 (5114 DAYS)
+Report limit reached, see PRT-file for remaining Schedule initialization.
+
+Initializing report step 6/12 at 1995-01-01 (5114 DAYS) line 476
+Processing keyword WCONPROD at line 480
+Complete report step 6 (1826 DAYS) at 2000-01-01 (6940 DAYS)
+
+Initializing report step 7/12 at 2000-01-01 (6940 DAYS) line 491
+Processing keyword WCONPROD at line 495
+Complete report step 7 (1827 DAYS) at 2005-01-01 (8766 DAYS)
+
+Initializing report step 8/12 at 2005-01-01 (8766 DAYS) line 506
+Processing keyword WCONPROD at line 510
+Complete report step 8 (1826 DAYS) at 2010-01-01 (10593 DAYS)
+
+Initializing report step 9/12 at 2010-01-01 (10593 DAYS) line 521
+Processing keyword WCONPROD at line 525
+Complete report step 9 (1826 DAYS) at 2015-01-01 (12419 DAYS)
+
+Initializing report step 10/12 at 2015-01-01 (12419 DAYS) line 536
+Processing keyword WCONPROD at line 540
+Complete report step 10 (1826 DAYS) at 2020-01-01 (14245 DAYS)
+
+Initializing report step 11/12 at 2020-01-01 (14245 DAYS) line 551
+Processing keyword WCONPROD at line 555
+Complete report step 11 (1827 DAYS) at 2025-01-01 (16071 DAYS)
+
+Initializing report step 12/12 at 2025-01-01 (16071 DAYS) line 566
+Processing keyword WCONPROD at line 570
+Complete report step 12 (365 DAYS) at 2026-01-01 (17898 DAYS)
+
+Processing keyword WELSPECS at line 592
+Processing keyword COMPDAT at line 596
+Processing keyword WCONINJE at line 606
+All completions in well INJ-1 is shut at 18263 days
+The well is therefore also shut
+
+Processing grid
+Total number of active cells: 4500 / total pore volume: 270606724 RB
+
+Property tree for linear solvers:
+{
+    "maxiter": "20",
+    "tol": "0.0050000000000000001",
+    "verbosity": "0",
+    "solver": "bicgstab",
+    "preconditioner": {
+        "type": "cprw",
+        "use_well_weights": "false",
+        "add_wells": "true",
+        "weight_type": "trueimpes",
+        "pre_smooth": "0",
+        "post_smooth": "1",
+        "finesmoother": {
+            "type": "paroverilu0",
+            "relaxation": "1"
+        },
+        "verbosity": "0",
+        "coarsesolver": {
+            "maxiter": "1",
+            "tol": "0.10000000000000001",
+            "solver": "loopsolver",
+            "verbosity": "0",
+            "preconditioner": {
+                "type": "amg",
+                "alpha": "0.33333333333300003",
+                "relaxation": "1",
+                "iterations": "1",
+                "coarsenTarget": "1200",
+                "pre_smooth": "1",
+                "post_smooth": "1",
+                "beta": "0",
+                "smoother": "ilu0",
+                "verbosity": "0",
+                "maxlevel": "15",
+                "skip_isolated": "0",
+                "accumulate": "1",
+                "prolongationdamping": "1",
+                "maxdistance": "2",
+                "maxconnectivity": "15",
+                "maxaggsize": "6",
+                "minaggsize": "4"
+            }
+        }
+    }
+}
+
+
+Warning: Unhandled summary keyword FAQT
+In NigerDelta UGH1 Composite Field.DATA line 358
+
+Warning: Unhandled summary keyword ALL/AAQRG
+In NigerDelta UGH1 Composite Field.DATA line 367
+
+Warning: Unhandled summary keyword ALL/AAQTG
+In NigerDelta UGH1 Composite Field.DATA line 367
+
+Warning: Unhandled summary keyword ALL/FAQR
+In NigerDelta UGH1 Composite Field.DATA line 367
+
+Warning: Unhandled summary keyword ALL/FAQRG
+In NigerDelta UGH1 Composite Field.DATA line 367
+
+Warning: Unhandled summary keyword ALL/FAQTG
+In NigerDelta UGH1 Composite Field.DATA line 367
+
+Warning: Unhandled summary keyword ALL/FWGR
+In NigerDelta UGH1 Composite Field.DATA line 367
+
+Warning: Unhandled summary keyword ALL/GWGR
+In NigerDelta UGH1 Composite Field.DATA line 367
+
+
+================ Starting main simulation loop ===============
+
+
+Report step  0/12 at day 0/18263, date = 01-Jan-1976
+Using Newton nonlinear solver.
+Restart file written for report step  0/12, date = 01-Jan-1976 00:00:00
+
+Starting time step 0, stepsize 1 days, at day 0/731, date = 01-Jan-1976
+ Newton its= 3, linearizations= 4 (0.1sec), linear its=  4 (0.2sec)
+
+Starting time step 1, stepsize 3 days, at day 1/731, date = 02-Jan-1976
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 2, stepsize 9 days, at day 4/731, date = 05-Jan-1976
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 3, stepsize 27 days, at day 13/731, date = 14-Jan-1976
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 4, stepsize 81 days, at day 40/731, date = 10-Feb-1976
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 5, stepsize 243 days, at day 121/731, date = 01-May-1976
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 6, stepsize 183.5 days, at day 364/731, date = 30-Dec-1976
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 7, stepsize 183.5 days, at day 547.5/731, date = 01-Jul-1977
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT       731  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    1    01 Jan 1978  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :      250.0:        0.0:      192.1:      353.5:      0.000:      0.77:      0.0000:        :        :
+:FLD     :           :    :      250.0:        0.0:      192.1:      353.5:      0.000:      0.77:      0.0000:        :        :
+:AFIESERE:  6,  6    :ORAT:       55.0:        0.0:       41.9:       77.6:      0.000:      0.76:      0.0000:  2636.7:     0.0:
+:ERIEMU  :  6, 24    :ORAT:       25.0:        0.0:       19.2:       35.3:      0.000:      0.77:      0.0000:  2636.9:     0.0:
+:EVWRENI : 24,  6    :ORAT:       40.0:        0.0:       30.6:       56.5:      0.000:      0.76:      0.0000:  2637.8:     0.0:
+:OWEH    : 24, 24    :ORAT:       17.5:        0.0:       13.5:       24.8:      0.000:      0.77:      0.0000:  2637.9:     0.0:
+:OLOMORO : 15, 10    :ORAT:       22.5:        0.0:       17.3:       31.8:      0.000:      0.77:      0.0000:  2637.6:     0.0:
+:KOKORI  : 10, 15    :ORAT:       45.0:        0.0:       34.7:       63.7:      0.000:      0.77:      0.0000:  2637.2:     0.0:
+:ORONI   : 20, 20    :ORAT:       15.0:        0.0:       11.6:       21.3:      0.000:      0.78:      0.0000:  2637.8:     0.0:
+:UZERE   : 15, 25    :ORAT:       30.0:        0.0:       23.2:       42.6:      0.000:      0.77:      0.0000:  2637.5:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :      182.7:        0.0:        0.1:      258.9:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :      182.7:        0.0:        0.1:      258.9:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:       40.2:        0.0:        0.0:       56.8:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:       18.3:        0.0:        0.0:       25.9:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:       29.2:        0.0:        0.0:       41.3:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:       12.8:        0.0:        0.0:       18.2:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:       16.4:        0.0:        0.0:       23.3:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:       32.9:        0.0:        0.0:       46.6:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:       11.0:        0.0:        0.0:       15.6:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:       21.9:        0.0:        0.0:       31.2:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  1/12 at day 731/18263, date = 01-Jan-1978
+
+Starting time step 0, stepsize 365 days, at day 731/1461, date = 01-Jan-1978
+Restart file written for report step  1/12, date = 01-Jan-1978 00:00:00
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 1, stepsize 365 days, at day 1096/1461, date = 01-Jan-1979
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT      1461  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    2    01 Jan 1980  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     1500.0:        0.0:     1134.5:     2111.3:      0.000:      0.76:      0.0000:        :        :
+:FLD     :           :    :     1500.0:        0.0:     1134.5:     2111.3:      0.000:      0.76:      0.0000:        :        :
+:AFIESERE:  6,  6    :ORAT:      330.0:        0.0:      247.9:      463.4:      0.000:      0.75:      0.0000:  2602.2:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      150.0:        0.0:      113.2:      211.0:      0.000:      0.75:      0.0000:  2603.9:     0.0:
+:EVWRENI : 24,  6    :ORAT:      240.0:        0.0:      180.5:      337.2:      0.000:      0.75:      0.0000:  2602.3:     0.0:
+:OWEH    : 24, 24    :ORAT:      105.0:        0.0:       80.0:      148.1:      0.000:      0.76:      0.0000:  2603.7:     0.0:
+:OLOMORO : 15, 10    :ORAT:      135.0:        0.0:      102.4:      190.2:      0.000:      0.76:      0.0000:  2604.1:     0.0:
+:KOKORI  : 10, 15    :ORAT:      270.0:        0.0:      204.5:      380.2:      0.000:      0.76:      0.0000:  2604.0:     0.0:
+:ORONI   : 20, 20    :ORAT:       90.0:        0.0:       68.7:      127.1:      0.000:      0.76:      0.0000:  2604.0:     0.0:
+:UZERE   : 15, 25    :ORAT:      180.0:        0.0:      137.3:      254.0:      0.000:      0.76:      0.0000:  2603.3:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :     1277.7:        0.0:        1.0:     1801.3:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :     1277.7:        0.0:        1.0:     1801.3:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:      281.1:        0.0:        0.2:      395.4:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:      127.8:        0.0:        0.1:      180.0:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:      204.4:        0.0:        0.2:      287.7:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:       89.4:        0.0:        0.1:      126.4:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:      115.0:        0.0:        0.1:      162.3:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:      230.0:        0.0:        0.2:      324.4:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:       76.7:        0.0:        0.1:      108.4:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:      153.3:        0.0:        0.1:      216.7:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  2/12 at day 1461/18263, date = 01-Jan-1980
+
+Starting time step 0, stepsize 365 days, at day 1461/3288, date = 01-Jan-1980
+Restart file written for report step  2/12, date = 01-Jan-1980 00:00:00
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  2 (0.1sec)
+
+Starting time step 1, stepsize 365 days, at day 1826/3288, date = 31-Dec-1980
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+Starting time step 2, stepsize 365 days, at day 2191/3288, date = 31-Dec-1981
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  3 (0.1sec)
+
+Starting time step 3, stepsize 365 days, at day 2556/3288, date = 31-Dec-1982
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  4 (0.2sec)
+
+Starting time step 4, stepsize 183.5 days, at day 2921/3288, date = 31-Dec-1983
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  3 (0.1sec)
+
+Starting time step 5, stepsize 183.5 days, at day 3104.5/3288, date = 01-Jul-1984
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  3 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT      3288  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    3    01 Jan 1985  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     3500.0:        0.0:     2550.7:     4878.9:      0.000:      0.73:      0.0000:        :        :
+:FLD     :           :    :     3500.0:        0.0:     2550.7:     4878.9:      0.000:      0.73:      0.0000:        :        :
+:AFIESERE:  6,  6    :ORAT:      770.0:        0.0:      558.2:     1071.3:      0.000:      0.72:      0.0000:  2519.0:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      350.0:        0.0:      254.6:      487.5:      0.000:      0.73:      0.0000:  2523.4:     0.0:
+:EVWRENI : 24,  6    :ORAT:      560.0:        0.0:      405.7:      779.0:      0.000:      0.72:      0.0000:  2517.4:     0.0:
+:OWEH    : 24, 24    :ORAT:      245.0:        0.0:      179.6:      342.3:      0.000:      0.73:      0.0000:  2520.8:     0.0:
+:OLOMORO : 15, 10    :ORAT:      315.0:        0.0:      230.1:      439.3:      0.000:      0.73:      0.0000:  2522.6:     0.0:
+:KOKORI  : 10, 15    :ORAT:      630.0:        0.0:      459.5:      878.2:      0.000:      0.73:      0.0000:  2523.0:     0.0:
+:ORONI   : 20, 20    :ORAT:      210.0:        0.0:      154.5:      293.9:      0.000:      0.74:      0.0000:  2522.0:     0.0:
+:UZERE   : 15, 25    :ORAT:      420.0:        0.0:      308.5:      587.4:      0.000:      0.73:      0.0000:  2520.8:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :     7672.2:        0.0:        5.7:    10736.9:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :     7672.2:        0.0:        5.7:    10736.9:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     1687.9:        0.0:        1.2:     2357.1:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:      767.2:        0.0:        0.6:     1073.1:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     1227.6:        0.0:        0.9:     1714.5:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:      537.1:        0.0:        0.4:      753.2:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:      690.5:        0.0:        0.5:      967.1:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     1381.0:        0.0:        1.0:     1933.3:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:      460.3:        0.0:        0.3:      646.4:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:      920.7:        0.0:        0.7:     1292.0:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  3/12 at day 3288/18263, date = 01-Jan-1985
+Restart file written for report step  3/12, date = 01-Jan-1985 00:00:00
+
+Starting time step 0, stepsize 365 days, at day 3288/5114, date = 01-Jan-1985
+ Newton its= 4, linearizations= 5 (0.1sec), linear its=  5 (0.2sec)
+
+Starting time step 1, stepsize 365 days, at day 3653/5114, date = 01-Jan-1986
+ Newton its= 4, linearizations= 5 (0.1sec), linear its=  5 (0.2sec)
+
+Starting time step 2, stepsize 365 days, at day 4018/5114, date = 01-Jan-1987
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 3, stepsize 365 days, at day 4383/5114, date = 01-Jan-1988
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  8 (0.2sec)
+
+Starting time step 4, stepsize 183 days, at day 4748/5114, date = 31-Dec-1988
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+Starting time step 5, stepsize 183 days, at day 4931/5114, date = 02-Jul-1989
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+                              **************************************************************************
+  WELLS    AT      5114  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    4    01 Jan 1990  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     4700.0:        0.0:     3346.2:     6514.9:      0.000:      0.71:      0.0000:        :        :
+:FLD     :           :    :     4700.0:        0.0:     3346.2:     6514.9:      0.000:      0.71:      0.0000:        :        :
+:AFIESERE:  6,  6    :ORAT:     1034.0:        0.0:      736.2:     1433.2:      0.000:      0.71:      0.0000:  2457.0:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      470.0:        0.0:      333.0:      650.1:      0.000:      0.71:      0.0000:  2464.0:     0.0:
+:EVWRENI : 24,  6    :ORAT:      752.0:        0.0:      534.9:     1041.7:      0.000:      0.71:      0.0000:  2454.6:     0.0:
+:OWEH    : 24, 24    :ORAT:      329.0:        0.0:      234.6:      456.5:      0.000:      0.71:      0.0000:  2459.9:     0.0:
+:OLOMORO : 15, 10    :ORAT:      423.0:        0.0:      300.6:      585.7:      0.000:      0.71:      0.0000:  2462.5:     0.0:
+:KOKORI  : 10, 15    :ORAT:      846.0:        0.0:      602.4:     1172.6:      0.000:      0.71:      0.0000:  2463.0:     0.0:
+:ORONI   : 20, 20    :ORAT:      282.0:        0.0:      201.7:      391.9:      0.000:      0.72:      0.0000:  2461.6:     0.0:
+:UZERE   : 15, 25    :ORAT:      564.0:        0.0:      402.9:      783.2:      0.000:      0.71:      0.0000:  2460.1:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    16254.4:        0.0:       11.8:    22645.3:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    16254.4:        0.0:       11.8:    22645.3:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     3576.0:        0.0:        2.6:     4974.6:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     1625.4:        0.0:        1.2:     2262.7:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     2600.7:        0.0:        1.9:     3617.7:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     1137.8:        0.0:        0.8:     1587.9:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     1462.9:        0.0:        1.1:     2038.8:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     2925.8:        0.0:        2.1:     4076.9:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:      975.3:        0.0:        0.7:     1362.8:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     1950.5:        0.0:        1.4:     2723.9:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  4/12 at day 5114/18263, date = 01-Jan-1990
+
+Starting time step 0, stepsize 365 days, at day 5114/6940, date = 01-Jan-1990
+Restart file written for report step  4/12, date = 01-Jan-1990 00:00:00
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 1, stepsize 365 days, at day 5479/6940, date = 01-Jan-1991
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 2, stepsize 365 days, at day 5844/6940, date = 01-Jan-1992
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+Starting time step 3, stepsize 365 days, at day 6209/6940, date = 31-Dec-1992
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 4, stepsize 183 days, at day 6574/6940, date = 31-Dec-1993
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+Starting time step 5, stepsize 183 days, at day 6757/6940, date = 02-Jul-1994
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT      6940  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    5    01 Jan 1995  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     3900.0:        4.6:     2776.5:     5414.0:      0.001:      0.71:      0.0017:        :        :
+:FLD     :           :    :     3900.0:        4.6:     2776.5:     5414.0:      0.001:      0.71:      0.0017:        :        :
+:AFIESERE:  6,  6    :ORAT:      858.0:        0.0:      611.7:     1190.9:      0.000:      0.71:      0.0000:  2457.1:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      390.0:        4.6:      275.3:      543.7:      0.012:      0.71:      0.0168:  2462.3:     0.0:
+:EVWRENI : 24,  6    :ORAT:      624.0:        0.0:      444.7:      865.9:      0.000:      0.71:      0.0000:  2455.7:     0.0:
+:OWEH    : 24, 24    :ORAT:      273.0:        0.0:      194.5:      378.8:      0.000:      0.71:      0.0000:  2460.3:     0.0:
+:OLOMORO : 15, 10    :ORAT:      351.0:        0.0:      249.1:      485.9:      0.000:      0.71:      0.0000:  2462.6:     0.0:
+:KOKORI  : 10, 15    :ORAT:      702.0:        0.0:      499.8:      973.6:      0.000:      0.71:      0.0000:  2463.1:     0.0:
+:ORONI   : 20, 20    :ORAT:      234.0:        0.0:      167.2:      325.2:      0.000:      0.71:      0.0000:  2461.7:     0.0:
+:UZERE   : 15, 25    :ORAT:      468.0:        0.0:      334.1:      650.0:      0.000:      0.71:      0.0000:  2460.7:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    23375.8:        1.5:       16.9:    32525.9:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    23375.8:        1.5:       16.9:    32525.9:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     5142.7:        0.0:        3.7:     7149.0:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     2337.6:        1.5:        1.7:     3248.9:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     3740.1:        0.0:        2.7:     5198.6:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     1636.3:        0.0:        1.2:     2279.8:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     2103.8:        0.0:        1.5:     2926.4:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     4207.7:        0.0:        3.0:     5855.1:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     1402.6:        0.0:        1.0:     1956.9:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     2805.1:        0.0:        2.0:     3911.3:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  5/12 at day 6940/18263, date = 01-Jan-1995
+
+Starting time step 0, stepsize 365 days, at day 6940/8766, date = 01-Jan-1995
+Restart file written for report step  5/12, date = 01-Jan-1995 00:00:00
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.1sec)
+
+Starting time step 1, stepsize 365 days, at day 7305/8766, date = 01-Jan-1996
+ Newton its= 4, linearizations= 5 (0.1sec), linear its=  9 (0.2sec)
+
+Starting time step 2, stepsize 365 days, at day 7670/8766, date = 31-Dec-1996
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+Starting time step 3, stepsize 365 days, at day 8035/8766, date = 31-Dec-1997
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 4, stepsize 183 days, at day 8400/8766, date = 31-Dec-1998
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+Starting time step 5, stepsize 183 days, at day 8583/8766, date = 02-Jul-1999
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT      8766  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    6    01 Jan 2000  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     3000.0:       42.2:     2149.2:     4209.3:      0.014:      0.72:      0.0196:        :        :
+:FLD     :           :    :     3000.0:       42.2:     2149.2:     4209.3:      0.014:      0.72:      0.0196:        :        :
+:AFIESERE:  6,  6    :ORAT:      660.0:        6.9:      473.4:      924.1:      0.010:      0.72:      0.0146:  2471.4:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      300.0:       18.3:      213.4:      434.3:      0.058:      0.71:      0.0859:  2478.6:     0.0:
+:EVWRENI : 24,  6    :ORAT:      480.0:        0.0:      343.2:      665.7:      0.000:      0.71:      0.0000:  2475.9:     0.0:
+:OWEH    : 24, 24    :ORAT:      210.0:        0.0:      150.9:      292.1:      0.000:      0.72:      0.0000:  2479.3:     0.0:
+:OLOMORO : 15, 10    :ORAT:      270.0:        0.0:      193.3:      374.7:      0.000:      0.72:      0.0000:  2481.1:     0.0:
+:KOKORI  : 10, 15    :ORAT:      540.0:       16.9:      386.1:      766.3:      0.030:      0.71:      0.0438:  2480.0:     0.0:
+:ORONI   : 20, 20    :ORAT:      180.0:        0.0:      129.8:      250.8:      0.000:      0.72:      0.0000:  2480.4:     0.0:
+:UZERE   : 15, 25    :ORAT:      360.0:        0.0:      259.2:      501.3:      0.000:      0.72:      0.0000:  2479.7:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    28853.8:       34.9:       20.8:    40167.5:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    28853.8:       34.9:       20.8:    40167.5:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     6347.8:        2.8:        4.6:     8825.3:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     2885.4:       20.5:        2.1:     4026.7:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     4616.6:        0.0:        3.3:     6414.4:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     2019.8:        0.0:        1.5:     2813.1:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     2596.8:        0.0:        1.9:     3610.5:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     5193.7:       11.6:        3.7:     7236.1:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     1731.2:        0.0:        1.3:     2414.8:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     3462.5:        0.0:        2.5:     4826.6:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  6/12 at day 8766/18263, date = 01-Jan-2000
+
+Starting time step 0, stepsize 365 days, at day 8766/10593, date = 01-Jan-2000
+Restart file written for report step  6/12, date = 01-Jan-2000 00:00:00
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 1, stepsize 365 days, at day 9131/10593, date = 31-Dec-2000
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+Starting time step 2, stepsize 365 days, at day 9496/10593, date = 31-Dec-2001
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 3, stepsize 365 days, at day 9861/10593, date = 31-Dec-2002
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  9 (0.2sec)
+
+Starting time step 4, stepsize 183.5 days, at day 10226/10593, date = 31-Dec-2003
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.1sec)
+
+Starting time step 5, stepsize 183.5 days, at day 10409.5/10593, date = 01-Jul-2004
+ Newton its= 2, linearizations= 3 (0.0sec), linear its=  3 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT     10593  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    7    01 Jan 2005  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     2400.0:      118.7:     1731.3:     3460.9:      0.047:      0.72:      0.0686:        :        :
+:FLD     :           :    :     2400.0:      118.7:     1731.3:     3460.9:      0.047:      0.72:      0.0686:        :        :
+:AFIESERE:  6,  6    :ORAT:      528.0:       30.2:      381.2:      765.8:      0.054:      0.72:      0.0793:  2487.7:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      240.0:       78.2:      171.9:      413.5:      0.246:      0.72:      0.4549:  2490.6:     0.0:
+:EVWRENI : 24,  6    :ORAT:      384.0:        0.0:      276.4:      533.5:      0.000:      0.72:      0.0000:  2493.4:     0.0:
+:OWEH    : 24, 24    :ORAT:      168.0:        0.0:      121.7:      234.2:      0.000:      0.72:      0.0000:  2496.1:     0.0:
+:OLOMORO : 15, 10    :ORAT:      216.0:        0.0:      155.8:      300.4:      0.000:      0.72:      0.0000:  2497.6:     0.0:
+:KOKORI  : 10, 15    :ORAT:      432.0:       10.3:      310.6:      610.5:      0.023:      0.72:      0.0331:  2495.5:     0.0:
+:ORONI   : 20, 20    :ORAT:      144.0:        0.0:      104.6:      201.1:      0.000:      0.73:      0.0000:  2497.0:     0.0:
+:UZERE   : 15, 25    :ORAT:      288.0:        0.0:      209.0:      401.9:      0.000:      0.73:      0.0000:  2496.4:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    33238.6:      173.5:       24.0:    46409.2:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    33238.6:      173.5:       24.0:    46409.2:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     7312.5:       37.0:        5.3:    10202.8:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     3323.9:      101.2:        2.4:     4717.9:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     5318.2:        0.0:        3.8:     7388.8:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     2326.7:        0.0:        1.7:     3240.9:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     2991.5:        0.0:        2.2:     4159.3:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     5983.0:       35.4:        4.3:     8356.5:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     1994.3:        0.0:        1.4:     2782.2:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     3988.6:        0.0:        2.9:     5560.8:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  7/12 at day 10593/18263, date = 01-Jan-2005
+
+Starting time step 0, stepsize 365 days, at day 10593/12419, date = 01-Jan-2005
+Restart file written for report step  7/12, date = 01-Jan-2005 00:00:00
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 1, stepsize 365 days, at day 10958/12419, date = 01-Jan-2006
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 2, stepsize 365 days, at day 11323/12419, date = 01-Jan-2007
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+Starting time step 3, stepsize 365 days, at day 11688/12419, date = 01-Jan-2008
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 4, stepsize 183 days, at day 12053/12419, date = 31-Dec-2008
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+Starting time step 5, stepsize 183 days, at day 12236/12419, date = 02-Jul-2009
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  3 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT     12419  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    8    01 Jan 2010  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     2000.0:      378.6:     1448.4:     3174.7:      0.159:      0.72:      0.2614:        :        :
+:FLD     :           :    :     2000.0:      378.6:     1448.4:     3174.7:      0.159:      0.72:      0.2614:        :        :
+:AFIESERE:  6,  6    :ORAT:      440.0:       37.6:      318.8:      651.3:      0.079:      0.72:      0.1179:  2498.1:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      200.0:      120.1:      143.8:      401.5:      0.375:      0.72:      0.8350:  2499.5:     0.0:
+:EVWRENI : 24,  6    :ORAT:      320.0:        0.0:      231.4:      445.1:      0.000:      0.72:      0.0000:  2503.8:     0.0:
+:OWEH    : 24, 24    :ORAT:      140.0:        0.0:      101.9:      195.4:      0.000:      0.73:      0.0000:  2505.9:     0.0:
+:OLOMORO : 15, 10    :ORAT:      180.0:        0.0:      130.5:      250.6:      0.000:      0.72:      0.0000:  2507.1:     0.0:
+:KOKORI  : 10, 15    :ORAT:      360.0:      220.6:      259.8:      727.7:      0.380:      0.72:      0.8492:  2504.6:     0.0:
+:ORONI   : 20, 20    :ORAT:      120.0:        0.0:       87.6:      167.8:      0.000:      0.73:      0.0000:  2506.6:     0.0:
+:UZERE   : 15, 25    :ORAT:      240.0:        0.2:      174.7:      335.3:      0.001:      0.73:      0.0014:  2505.8:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    36890.6:      618.7:       26.6:    51953.0:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    36890.6:      618.7:       26.6:    51953.0:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     8115.9:       95.5:        5.8:    11381.9:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     3689.1:      279.4:        2.6:     5408.5:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     5902.5:        0.0:        4.2:     8201.4:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     2582.3:        0.0:        1.9:     3597.8:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     3320.2:        0.0:        2.4:     4617.0:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     6640.3:      243.8:        4.8:     9485.0:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     2213.4:        0.0:        1.6:     3088.6:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     4426.9:        0.1:        3.2:     6172.9:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  8/12 at day 12419/18263, date = 01-Jan-2010
+
+Starting time step 0, stepsize 365 days, at day 12419/14245, date = 01-Jan-2010
+Restart file written for report step  8/12, date = 01-Jan-2010 00:00:00
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 1, stepsize 365 days, at day 12784/14245, date = 01-Jan-2011
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 2, stepsize 365 days, at day 13149/14245, date = 01-Jan-2012
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 3, stepsize 365 days, at day 13514/14245, date = 31-Dec-2012
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  6 (0.2sec)
+
+Starting time step 4, stepsize 183 days, at day 13879/14245, date = 31-Dec-2013
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.1sec)
+
+Starting time step 5, stepsize 183 days, at day 14062/14245, date = 02-Jul-2014
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+                              **************************************************************************
+  WELLS    AT     14245  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT    9    01 Jan 2015  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     1700.0:      409.0:     1235.6:     2790.3:      0.194:      0.73:      0.3310:        :        :
+:FLD     :           :    :     1700.0:      409.0:     1235.6:     2790.3:      0.194:      0.73:      0.3310:        :        :
+:AFIESERE:  6,  6    :ORAT:      374.0:       32.2:      271.9:      554.1:      0.079:      0.73:      0.1183:  2508.5:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      170.0:      128.2:      122.8:      368.5:      0.430:      0.72:      1.0442:  2510.1:     0.0:
+:EVWRENI : 24,  6    :ORAT:      272.0:        0.0:      197.5:      378.7:      0.000:      0.73:      0.0000:  2513.9:     0.0:
+:OWEH    : 24, 24    :ORAT:      119.0:        0.0:       87.0:      166.3:      0.000:      0.73:      0.0000:  2515.7:     0.0:
+:OLOMORO : 15, 10    :ORAT:      153.0:        0.1:      111.2:      213.2:      0.001:      0.73:      0.0011:  2516.3:     0.0:
+:KOKORI  : 10, 15    :ORAT:      306.0:      245.2:      221.7:      678.4:      0.445:      0.72:      1.1058:  2514.2:     0.0:
+:ORONI   : 20, 20    :ORAT:      102.0:        0.0:       74.8:      142.8:      0.000:      0.73:      0.0000:  2516.3:     0.0:
+:UZERE   : 15, 25    :ORAT:      204.0:        3.4:      148.8:      288.3:      0.016:      0.73:      0.0226:  2514.0:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    39994.8:     1113.1:       28.9:    56788.4:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    39994.8:     1113.1:       28.9:    56788.4:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     8798.9:      151.7:        6.3:    12391.3:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     3999.5:      493.3:        2.9:     6060.5:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     6399.2:        0.0:        4.6:     8892.8:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     2799.6:        0.0:        2.0:     3901.4:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     3599.5:        0.0:        2.6:     5006.4:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     7199.1:      463.4:        5.2:    10488.7:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     2399.7:        0.0:        1.7:     3349.3:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     4799.4:        4.7:        3.5:     6697.9:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step  9/12 at day 14245/18263, date = 01-Jan-2015
+
+Starting time step 0, stepsize 365 days, at day 14245/16071, date = 01-Jan-2015
+Restart file written for report step  9/12, date = 01-Jan-2015 00:00:00
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 1, stepsize 365 days, at day 14610/16071, date = 01-Jan-2016
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.1sec)
+
+Starting time step 2, stepsize 365 days, at day 14975/16071, date = 31-Dec-2016
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 3, stepsize 365 days, at day 15340/16071, date = 31-Dec-2017
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 4, stepsize 183 days, at day 15705/16071, date = 31-Dec-2018
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.1sec)
+
+Starting time step 5, stepsize 183 days, at day 15888/16071, date = 02-Jul-2019
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+                              **************************************************************************
+  WELLS    AT     16071  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT   10    01 Jan 2020  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     1430.0:      425.8:     1042.6:     2432.6:      0.229:      0.73:      0.4084:        :        :
+:FLD     :           :    :     1430.0:      425.8:     1042.6:     2432.6:      0.229:      0.73:      0.4084:        :        :
+:AFIESERE:  6,  6    :ORAT:      314.6:       19.2:      229.4:      458.3:      0.058:      0.73:      0.0837:  2518.3:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      143.0:      111.2:      103.7:      313.6:      0.437:      0.73:      1.0717:  2520.9:     0.0:
+:EVWRENI : 24,  6    :ORAT:      228.8:        0.0:      166.8:      318.9:      0.000:      0.73:      0.0000:  2523.6:     0.0:
+:OWEH    : 24, 24    :ORAT:      100.1:        0.0:       73.5:      140.1:      0.000:      0.73:      0.0000:  2525.1:     0.0:
+:OLOMORO : 15, 10    :ORAT:      128.7:        0.0:       93.6:      179.3:      0.000:      0.73:      0.0000:  2524.7:     0.0:
+:KOKORI  : 10, 15    :ORAT:      257.4:      252.5:      187.2:      618.7:      0.495:      0.73:      1.3488:  2523.4:     0.0:
+:ORONI   : 20, 20    :ORAT:       85.8:        0.0:       63.2:      120.3:      0.000:      0.74:      0.0000:  2525.6:     0.0:
+:UZERE   : 15, 25    :ORAT:      171.6:       42.9:      125.2:      283.5:      0.200:      0.73:      0.3428:  2520.8:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    42606.0:     1633.5:       30.8:    60965.8:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    42606.0:     1633.5:       30.8:    60965.8:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     9373.3:      187.9:        6.8:    13229.5:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     4260.6:      692.2:        3.1:     6628.8:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     6817.0:        0.0:        4.9:     9475.0:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     2982.4:        0.0:        2.2:     4157.2:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     3834.5:        3.8:        2.8:     5337.7:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     7669.1:      695.1:        5.5:    11382.0:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     2556.4:        0.0:        1.9:     3569.0:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     5112.7:       54.5:        3.7:     7186.5:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step 10/12 at day 16071/18263, date = 01-Jan-2020
+
+Starting time step 0, stepsize 365 days, at day 16071/17898, date = 01-Jan-2020
+Restart file written for report step 10/12, date = 01-Jan-2020 00:00:00
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+Starting time step 1, stepsize 365 days, at day 16436/17898, date = 31-Dec-2020
+ Newton its= 4, linearizations= 5 (0.1sec), linear its=  7 (0.3sec)
+
+Starting time step 2, stepsize 365 days, at day 16801/17898, date = 31-Dec-2021
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  5 (0.2sec)
+
+Starting time step 3, stepsize 365 days, at day 17166/17898, date = 31-Dec-2022
+ Newton its= 4, linearizations= 5 (0.0sec), linear its=  7 (0.2sec)
+
+Starting time step 4, stepsize 183.5 days, at day 17531/17898, date = 31-Dec-2023
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+Starting time step 5, stepsize 183.5 days, at day 17714.5/17898, date = 01-Jul-2024
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  5 (0.2sec)
+
+                              **************************************************************************
+  WELLS    AT     17898  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT   11    01 Jan 2025  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     1240.0:      412.0:      906.4:     2154.6:      0.249:      0.73:      0.4545:        :        :
+:FLD     :           :    :     1240.0:      412.0:      906.4:     2154.6:      0.249:      0.73:      0.4545:        :        :
+:AFIESERE:  6,  6    :ORAT:      272.8:        8.1:      199.4:      388.8:      0.029:      0.73:      0.0404:  2525.8:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      124.0:       92.5:       90.1:      268.0:      0.427:      0.73:      1.0269:  2529.5:     0.0:
+:EVWRENI : 24,  6    :ORAT:      198.4:        0.0:      145.1:      276.8:      0.000:      0.73:      0.0000:  2531.2:     0.0:
+:OWEH    : 24, 24    :ORAT:       86.8:        0.0:       63.9:      121.5:      0.000:      0.74:      0.0000:  2532.5:     0.0:
+:OLOMORO : 15, 10    :ORAT:      111.6:        0.0:       81.3:      155.5:      0.000:      0.73:      0.0000:  2533.9:     0.0:
+:KOKORI  : 10, 15    :ORAT:      223.2:      257.4:      162.8:      576.4:      0.536:      0.73:      1.5806:  2530.7:     0.0:
+:ORONI   : 20, 20    :ORAT:       74.4:        0.0:       55.0:      104.4:      0.000:      0.74:      0.0000:  2532.9:     0.0:
+:UZERE   : 15, 25    :ORAT:      148.8:       54.0:      108.8:      263.2:      0.266:      0.73:      0.4963:  2528.3:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    44871.5:     2167.1:       32.4:    64676.5:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    44871.5:     2167.1:       32.4:    64676.5:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     9871.7:      204.1:        7.1:    13941.4:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     4487.2:      861.8:        3.2:     7119.1:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     7179.4:        0.0:        5.2:     9980.6:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     3141.0:        0.0:        2.3:     4379.3:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     4038.4:       24.6:        2.9:     5643.4:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     8076.9:      934.5:        5.8:    12197.2:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     2692.3:        0.0:        2.0:     3759.7:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     5384.6:      142.0:        3.9:     7656.0:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+
+Report step 11/12 at day 17898/18263, date = 01-Jan-2025
+
+Starting time step 0, stepsize 365 days, at day 17898/18263, date = 01-Jan-2025
+Restart file written for report step 11/12, date = 01-Jan-2025 00:00:00
+ Newton its= 3, linearizations= 4 (0.0sec), linear its=  4 (0.1sec)
+
+                              **************************************************************************
+  WELLS    AT     18263  DAYS *NAGCSU-UGH1-SYNTHETIC-PILOT-SECTOR                                          *
+  REPORT   12    01 Jan 2026  *                                             Flow  version     2026.04  *
+                              **************************************************************************
+
+
+======================================================= PRODUCTION REPORT =======================================================
+ :  WELL  : LOCATION  :CTRL:    OIL    :   WATER   :    GAS    :   FLUID   :   WATER   : GAS/OIL  :  WAT/GAS   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  :MODE:   RATE    :   RATE    :   RATE    : RES.VOL.  :    CUT    :  RATIO   :   RATIO    :CON.PR. :BLK.PR. :
+ :        :           :    :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :           : MSCF/STB :  STB/MSCF  :  PSIA  :  PSIA  :
+=================================================================================================================================
+:FIELD   :           :    :     1090.0:      157.6:      798.0:     1684.1:      0.126:      0.73:      0.1975:        :        :
+:FLD     :           :    :     1090.0:      157.6:      798.0:     1684.1:      0.126:      0.73:      0.1975:        :        :
+:AFIESERE:  6,  6    :ORAT:      239.8:        0.2:      175.6:      334.9:      0.001:      0.73:      0.0010:  2530.3:     0.0:
+:ERIEMU  :  6, 24    :ORAT:      109.0:       78.4:       79.2:      232.6:      0.418:      0.73:      0.9894:  2534.4:     0.0:
+:EVWRENI : 24,  6    :ORAT:      174.4:        0.0:      127.7:      243.4:      0.000:      0.73:      0.0000:  2535.1:     0.0:
+:OWEH    : 24, 24    :ORAT:       76.3:        0.0:       56.3:      106.9:      0.000:      0.74:      0.0000:  2536.2:     0.0:
+:OLOMORO : 15, 10    :ORAT:       98.1:       35.5:       71.7:      173.4:      0.266:      0.73:      0.4946:  2535.8:     0.0:
+:KOKORI  : 10, 15    :ORAT:      196.2:        0.0:      143.4:      273.7:      0.000:      0.73:      0.0000:  2543.5:     0.0:
+:ORONI   : 20, 20    :ORAT:       65.4:        0.0:       48.4:       91.9:      0.000:      0.74:      0.0000:  2536.6:     0.0:
+:UZERE   : 15, 25    :ORAT:      130.8:       43.6:       95.8:      227.4:      0.250:      0.73:      0.4549:  2532.9:     0.0:
+ :--------:-----------:----:-----------:-----------:-----------:-----------:-----------:----------:------------:--------:--------:
+
+============================================= INJECTION REPORT ==============================================
+ :  WELL  : LOCATION  : CTRL : CTRL : CTRL :    OIL    :   WATER   :    GAS    :   FLUID   : BHP OR : THP OR :
+ :  NAME  :  (I,J,K)  : MODE : MODE : MODE :   RATE    :   RATE    :   RATE    : RES.VOL.  :CON.PR. :BLK.PR. :
+ :        :           : OIL  : WAT  : GAS  :  STB/DAY  :  STB/DAY  : MSCF/DAY  :  RB/DAY   :  PSIA  :  PSIA  :
+=============================================================================================================
+:FIELD   :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+:FLD     :           :      :      :      :        0.0:        0.0:        0.0:        0.0:        :        :
+ :--------:-----------:------:------:------:-----------:-----------:-----------:-----------:--------:--------:
+
+============================================== CUMULATIVE PRODUCTION/INJECTION TOTALS ==============================================
+ :  WELL  : LOCATION  :  WELL  :CTRL:    OIL    :   WATER   :    GAS    :   Prod    :    OIL    :   WATER   :    GAS    :    INJ    :
+ :  NAME  :  (I,J,K)  :  TYPE  :MODE:   PROD    :   PROD    :   PROD    : RES.VOL.  :    INJ    :    INJ    :    INJ    : RES.VOL.  :
+ :        :           :        :    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :   MSTB    :   MSTB    :   MMSCF   :    MRB    :
+====================================================================================================================================
+:FIELD   :           :        :    :    45269.4:     2224.6:       32.7:    65291.2:        0.0:        0.0:        0.0:        0.0:
+:FLD     :           :        :    :    45269.4:     2224.6:       32.7:    65291.2:        0.0:        0.0:        0.0:        0.0:
+:AFIESERE:  6,  6    :    PROD:ORAT:     9959.3:      204.1:        7.2:    14063.6:        0.0:        0.0:        0.0:        0.0:
+:ERIEMU  :  6, 24    :    PROD:ORAT:     4526.9:      890.5:        3.3:     7204.0:        0.0:        0.0:        0.0:        0.0:
+:EVWRENI : 24,  6    :    PROD:ORAT:     7243.1:        0.0:        5.2:    10069.4:        0.0:        0.0:        0.0:        0.0:
+:OWEH    : 24, 24    :    PROD:ORAT:     3168.9:        0.0:        2.3:     4418.3:        0.0:        0.0:        0.0:        0.0:
+:OLOMORO : 15, 10    :    PROD:ORAT:     4074.2:       37.6:        2.9:     5706.6:        0.0:        0.0:        0.0:        0.0:
+:KOKORI  : 10, 15    :    PROD:ORAT:     8148.5:      934.5:        5.9:    12297.0:        0.0:        0.0:        0.0:        0.0:
+:ORONI   : 20, 20    :    PROD:ORAT:     2716.2:        0.0:        2.0:     3793.2:        0.0:        0.0:        0.0:        0.0:
+:UZERE   : 15, 25    :    PROD:ORAT:     5432.3:      157.9:        3.9:     7739.0:        0.0:        0.0:        0.0:        0.0:
+ :--------:-----------:--------:----:-----------:-----------:-----------:-----------:-----------:-----------:-----------:-----------:
+
+Restart file written for report step 12/12, date = 01-Jan-2026 00:00:00
+
+
+================    End of simulation     ===============
+
+Number of MPI processes:         1
+Threads per MPI process:        16
+Setup time:                      0.57 s
+  Deck input:                    0.31 s
+Number of timesteps:            65
+Simulation time:                15.12 s
+  Assembly time:                 2.47 s (Wasted: 0.0 s; 0.0%)
+    Well assembly:               0.38 s (Wasted: 0.0 s; 0.0%)
+  Linear solve time:             9.67 s (Wasted: 0.0 s; 0.0%)
+    Linear setup:                5.23 s (Wasted: 0.0 s; 0.0%)
+  Props/update time:             1.42 s (Wasted: 0.0 s; 0.0%)
+  Pre/post step:                 1.37 s (Wasted: 0.0 s; 0.0%)
+  Output write time:             0.09 s
+Overall Linearizations:        272      (Wasted:     0; 0.0%)
+Overall Newton Iterations:     207      (Wasted:     0; 0.0%)
+Overall Linear Iterations:     314      (Wasted:     0; 0.0%)
+
+
+
+Error summary:
+Warnings          10
+Info              286
+Errors            0
+Bugs              0
+Debug             0
+Problems          0
+

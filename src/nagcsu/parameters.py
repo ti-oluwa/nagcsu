@@ -41,7 +41,7 @@ class ParameterSpec:
 
     group: str
     """Tuning priority group this parameter belongs to. Must be one of
-    `nagcsu.constants.TUNING_PRIORITY_ORDER`.
+    `nagcsu.constants.GROUP_TUNING_PRIORITY_ORDER`.
     """
 
     bounds: tuple[float, float]
@@ -183,7 +183,7 @@ PARAMETERS: typing.Final[dict[str, ParameterSpec]] = {
     )
 }
 """
-Every tunable parameter, keyed by its dotted name. See `nagcsu.constants.TUNING_PRIORITY_ORDER` for the 
+Every tunable parameter, keyed by its dotted name. See `nagcsu.constants.GROUP_TUNING_PRIORITY_ORDER` for the 
 groups' tuning priority.
 """
 

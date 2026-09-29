@@ -12,18 +12,51 @@ def report() -> None:
 
 
 @report.command(name="list")
-@click.option("--limit", default=20, show_default=True, help="Most recent runs to show.")
+@click.option("--strategy", default=None, help="Only list records with this exact strategy.")
+@click.option(
+    "--group", "group_name", default=None, help="Only list records with this exact group."
+)
+@click.option(
+    "--run-id-prefix",
+    default=None,
+    help="Only list records whose run_id starts with this prefix.",
+)
+@click.option(
+    "--run-id-regex",
+    default=None,
+    help="Only list records whose run_id matches this regex pattern.",
+)
+@click.option("--limit", default=20, show_default=True, help="Most recent matching runs to show.")
 @click.pass_context
-def list_(ctx: click.Context, limit: int) -> None:
-    """List the most recent logged runs, best-scored first within each group."""
+def list_(
+    ctx: click.Context,
+    strategy: str | None,
+    group_name: str | None,
+    run_id_prefix: str | None,
+    run_id_regex: str | None,
+    limit: int,
+) -> None:
+    """List logged runs, optionally narrowed to one strategy, group or run ID family."""
     project_config, _ = context.load(ctx)
     records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
     if not records:
         click.echo("No runs logged yet. Try `nagcsu run` first.")
         return
 
+    filtered = ledger.filter_records(
+        records,
+        strategy=strategy,
+        group=group_name,
+        run_id_prefix=run_id_prefix,
+        run_id_regex=run_id_regex,
+        limit=limit,
+    )
+    if not filtered:
+        click.echo("No runs match the selected filters.")
+        return
+
     click.echo(f"{'Run ID':<20}{'Group':<24}{'Strategy':<20}{'J':>10}  Note")
-    for record in records[-limit:]:
+    for record in filtered:
         if record.simulation_error:
             j_text = "FAILED"
         elif record.j is not None:
@@ -34,9 +67,9 @@ def list_(ctx: click.Context, limit: int) -> None:
             f"{record.run_id:<20}{(record.group or '-'):<24}{(record.strategy or '-'):<20}{j_text:>10}  {record.note}"
         )
 
-    best = ledger.get_best_record(records)
+    best = ledger.get_best_record(filtered)
     if best:
-        click.echo(f"\nBest so far: {best.run_id} (J={best.j:.4f})")
+        click.echo(f"\nBest in view: {best.run_id} (J={best.j:.4f})")
 
 
 @report.command(name="show")

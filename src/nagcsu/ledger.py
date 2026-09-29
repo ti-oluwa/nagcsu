@@ -4,6 +4,7 @@ import dataclasses
 import datetime
 import json
 import pathlib
+import re
 import typing
 
 LEDGER_SCHEMA_VERSION: typing.Final[int] = 1
@@ -93,6 +94,46 @@ def append(ledger_path: pathlib.Path | str, record: RunRecord) -> None:
 def new_run_id(existing: list[RunRecord]) -> str:
     """Return the next `run_NNNN` identifier given a project's existing records."""
     return f"run_{len(existing):04d}"
+
+
+def filter_records(
+    records: list[RunRecord],
+    *,
+    strategy: str | None = None,
+    group: str | None = None,
+    run_id_prefix: str | None = None,
+    run_id_regex: str | None = None,
+    limit: int | None = None,
+) -> list[RunRecord]:
+    """Narrow a list of records down to one strategy, group, or run ID pattern.
+
+    Order is preserved, so the result is still chronological. Useful
+    before plotting, where mixing every strategy onto one trial axis
+    (an `auto` session alongside an unrelated `sweep`) would make the
+    x-axis meaningless.
+
+    :param strategy: Keep only records with this exact `strategy`.
+    :param group: Keep only records with this exact `group`.
+    :param run_id_prefix: Keep only records whose `run_id` begins with
+        this prefix.
+    :param run_id_regex: Keep only records whose `run_id` matches this
+        regular expression.
+    :param limit: Keep only the most recent `limit` records, applied
+        after the other filters.
+    """
+    pattern: re.Pattern[str] | None = None
+    if run_id_regex is not None:
+        pattern = re.compile(run_id_regex)
+
+    filtered = [
+        record
+        for record in records
+        if (strategy is None or record.strategy == strategy)
+        and (group is None or record.group == group)
+        and (run_id_prefix is None or record.run_id.startswith(run_id_prefix))
+        and (pattern is None or pattern.fullmatch(record.run_id) is not None)
+    ]
+    return filtered[-limit:] if limit else filtered
 
 
 def get_best_record(records: list[RunRecord]) -> RunRecord | None:

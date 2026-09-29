@@ -64,3 +64,25 @@ def test_run_detailed_base_j_is_the_same_across_every_result() -> None:
     )
 
     assert {result.base_j for result in results} == {0.25}
+
+
+def test_recommend_groups_maps_parameter_names_to_their_groups() -> None:
+    from nagcsu.cli.commands import sensitivity as sensitivity_cli
+
+    groups = sensitivity_cli.recommend_groups([
+        "aquifer.radius",
+        "aquifer.permeability",
+        "sgof.sorg",
+    ])
+
+    assert groups == ["aquifer", "sgof_shape"]
+
+
+def test_recommend_groups_respects_the_limit() -> None:
+    from nagcsu.cli.commands import sensitivity as sensitivity_cli
+
+    groups = sensitivity_cli.recommend_groups(
+        ["aquifer.radius", "sgof.sorg", "swof.residual_oil_saturation"], limit=1
+    )
+
+    assert groups == ["aquifer"]

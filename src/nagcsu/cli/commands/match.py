@@ -19,11 +19,13 @@ def match() -> None:
 @match.command(name="list-parameters")
 def list_parameters() -> None:
     """List every tunable parameter, its group, bounds and default."""
-    for group in constants.TUNING_PRIORITY_ORDER:
+    for group in constants.GROUP_TUNING_PRIORITY_ORDER:
         specs = parameters.get_parameters_in_group(group)
         if not specs:
             continue
-        click.echo(f"\n{group} (priority {constants.TUNING_PRIORITY_ORDER.index(group) + 1})")
+        click.echo(
+            f"\n{group} (priority {constants.GROUP_TUNING_PRIORITY_ORDER.index(group) + 1})"
+        )
         for spec in specs:
             click.echo(
                 f"  {spec.name:<40} default={spec.default:<12g} "
@@ -46,8 +48,27 @@ def list_parameters() -> None:
     default=None,
     help="Group name recorded on each ledger entry. Defaults to the parameter's own group.",
 )
+@click.option(
+    "--run-id-prefix",
+    default="sweep",
+    show_default=True,
+    help="Prefix for the generated run IDs in this sweep, e.g. sweep_00000.",
+)
+@click.option(
+    "--max-evaluations",
+    default=grid.MAX_EVALUATIONS_DEFAULT,
+    show_default=True,
+    help="Refuse to run more than this many values without raising the limit explicitly.",
+)
 @click.pass_context
-def sweep(ctx: click.Context, param_name: str, values: str, group_label: str | None) -> None:
+def sweep(
+    ctx: click.Context,
+    param_name: str,
+    values: str,
+    group_label: str | None,
+    run_id_prefix: str,
+    max_evaluations: int,
+) -> None:
     """Run every value of one parameter, holding all others at their default.
 
     Pick one parameter, list the values to try, and get back the J for each.
@@ -73,11 +94,14 @@ def sweep(ctx: click.Context, param_name: str, values: str, group_label: str | N
         context.echo_outcome_header(record)
 
     evaluate = pipeline.make_evaluate(
-        project_config, base_deck, run_id_prefix="sweep", on_outcome=on_outcome
+        project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
     )
     result = grid.search(
-        parameters.default_state(), {param_name: parsed_values}, evaluate
-    )  # TODO: Expose max_evaluations
+        parameters.default_state(),
+        {param_name: parsed_values},
+        evaluate,
+        max_evaluations=max_evaluations,
+    )
     context.warn_if_every_trial_failed(result.best.j, command="match sweep")
     click.echo(f"\nBest: {param_name}={result.best.state[param_name]:g}, J={result.best.j:.4f}")
 
@@ -91,10 +115,20 @@ def sweep(ctx: click.Context, param_name: str, values: str, group_label: str | N
     help="Parameter to randomize, repeatable.",
 )
 @click.option("--trials", default=20, show_default=True, help="Number of random trials.")
+@click.option(
+    "--run-id-prefix",
+    default="random",
+    show_default=True,
+    help="Prefix for the generated run IDs in this random search, e.g. random_00000.",
+)
 @click.option("--seed", default=None, type=int, help="Random seed, for reproducible trials.")
 @click.pass_context
 def random_(
-    ctx: click.Context, param_names: tuple[str, ...], trials: int, seed: int | None
+    ctx: click.Context,
+    param_names: tuple[str, ...],
+    trials: int,
+    run_id_prefix: str,
+    seed: int | None,
 ) -> None:
     """Randomly sample one or more parameters within their bounds."""
     unknown = [name for name in param_names if name not in parameters.PARAMETERS]
@@ -119,7 +153,7 @@ def random_(
         context.echo_outcome_header(record)
 
     evaluate = pipeline.make_evaluate(
-        project_config, base_deck, run_id_prefix="random", on_outcome=on_outcome
+        project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
     )
     result = random_search.search(
         parameters.default_state(),
@@ -142,6 +176,12 @@ def random_(
     help="Stop once J reaches this value. Defaults to the project config's objective.target_j.",
 )
 @click.option(
+    "--run-id-prefix",
+    default="auto",
+    show_default=True,
+    help="Prefix for the generated run IDs during the optimization, e.g. auto_00000.",
+)
+@click.option(
     "--groups",
     default=None,
     help="Comma-separated subset of tuning groups to run, in the order given. Defaults to the full priority order.",
@@ -154,8 +194,9 @@ def random_(
 )
 @click.option(
     "--report",
-    "report_path",  # TODO: Use proper type here. I think click support pathlib.Path and other path validation options
+    "report_path",
     default=None,
+    type=click.Path(dir_okay=False, writable=True, path_type=pathlib.Path),
     help="Write a Markdown summary report to this path once tuning stops.",
 )
 @click.option(
@@ -201,9 +242,10 @@ def random_(
 def auto(
     ctx: click.Context,
     target_j: float | None,
+    run_id_prefix: str,
     groups: str | None,
     passes_per_group: int,
-    report_path: str | None,
+    report_path: pathlib.Path | None,
     xatol_fraction: float,
     max_evals_per_parameter: int,
     min_improvement: float,
@@ -224,7 +266,7 @@ def auto(
     """
     project_config, base_deck = context.load(ctx)
     resolved_target_j = target_j if target_j is not None else project_config.objective.target_j
-    groups_in_order = groups.split(",") if groups else list(constants.TUNING_PRIORITY_ORDER)
+    ordered_groups = groups.split(",") if groups else list(constants.GROUP_TUNING_PRIORITY_ORDER)
 
     if weights:
         overrides = parse_weight_overrides(weights)
@@ -234,9 +276,9 @@ def auto(
             objective=dataclasses.replace(project_config.objective, weights=merged_weights),
         )
 
-    bounds_by_group = {
+    group_parameter_bounds = {
         group: {spec.name: spec.bounds for spec in parameters.get_parameters_in_group(group)}
-        for group in groups_in_order
+        for group in ordered_groups
     }
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
@@ -255,12 +297,12 @@ def auto(
         ledger.append(ledger_path, record)
 
     evaluate = pipeline.make_evaluate(
-        project_config, base_deck, run_id_prefix="auto", on_outcome=on_outcome
+        project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
     )
     result, outcomes = coordinate_descent.multi_start_search(
         parameters.default_state(),
-        groups_in_order,
-        bounds_by_group,
+        ordered_groups,
+        group_parameter_bounds,
         evaluate,
         target_j=resolved_target_j,
         passes_per_group=passes_per_group,
@@ -292,7 +334,7 @@ def auto(
     )
     final_record = pipeline.build_run_record(
         final_outcome,
-        group=groups_in_order[-1] if groups_in_order else None,
+        group=ordered_groups[-1] if ordered_groups else None,
         strategy="coordinate_descent",
         note=f"auto-tune final state after {len(result.trials)} trials across {[outcome.group for outcome in outcomes]}",
     )
@@ -353,5 +395,11 @@ def write_parameters_snapshot(state: dict[str, float], path: pathlib.Path) -> No
     `.inc` file to write a value into. This snapshot is what a later
     refactor into `INCLUDE` files would read from.
     """
+    # Cast every value to a native float: PyYAML's SafeDumper cannot
+    # serialize a numpy scalar (numpy.float64 and friends), and a
+    # search strategy built on scipy is a plausible source of one even
+    # after `coordinate_descent`'s own fix, so this stays defensive
+    # rather than trusting every caller to have already converted.
+    normalized_state = {name: float(value) for name, value in state.items()}
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(state, sort_keys=True), encoding="utf-8")
+    path.write_text(yaml.safe_dump(normalized_state, sort_keys=True), encoding="utf-8")

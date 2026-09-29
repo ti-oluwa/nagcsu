@@ -1,5 +1,7 @@
 """Tests for `nagcsu.ledger`."""
 
+import dataclasses
+
 import pytest
 
 from nagcsu import ledger
@@ -51,3 +53,32 @@ def test_best_record_ignores_unscored_runs(tmp_path) -> None:
 
 def test_best_record_returns_none_when_nothing_is_scored() -> None:
     assert ledger.get_best_record([get_run_record("run_0000", j=None)]) is None
+
+
+def test_filter_records_by_strategy() -> None:
+    records = [
+        get_run_record("run_0000", j=0.5),
+        dataclasses.replace(get_run_record("run_0001", j=0.4), strategy="random"),
+    ]
+    filtered = ledger.filter_records(records, strategy="grid")
+    assert [record.run_id for record in filtered] == ["run_0000"]
+
+
+def test_filter_records_by_group() -> None:
+    records = [
+        get_run_record("run_0000", j=0.5),
+        dataclasses.replace(get_run_record("run_0001", j=0.4), group="sgof_shape"),
+    ]
+    filtered = ledger.filter_records(records, group="sgof_shape")
+    assert [record.run_id for record in filtered] == ["run_0001"]
+
+
+def test_filter_records_limit_keeps_the_most_recent() -> None:
+    records = [get_run_record(f"run_{i:04d}", j=float(i)) for i in range(5)]
+    filtered = ledger.filter_records(records, limit=2)
+    assert [record.run_id for record in filtered] == ["run_0003", "run_0004"]
+
+
+def test_filter_records_with_no_filters_returns_everything() -> None:
+    records = [get_run_record("run_0000", j=0.5), get_run_record("run_0001", j=0.4)]
+    assert ledger.filter_records(records) == records

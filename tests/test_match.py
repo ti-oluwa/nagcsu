@@ -1,7 +1,9 @@
 """Tests for `nagcsu.cli.commands.match`."""
 
 import click
+import numpy as np
 import pytest
+import yaml
 
 from nagcsu.cli.commands import match
 
@@ -24,3 +26,16 @@ def test_parse_weight_overrides_raises_on_missing_equals() -> None:
 def test_parse_weight_overrides_raises_on_non_numeric_value() -> None:
     with pytest.raises(click.BadParameter):
         match.parse_weight_overrides("gor=not-a-number")
+
+
+def test_write_parameters_snapshot_coerces_numpy_floats(tmp_path) -> None:
+    # Regression test: scipy.optimize returns numpy.float64, which
+    # PyYAML's SafeDumper cannot serialize on its own.
+    numpy_state = {"aquifer.radius": np.float64(55.94746325289693)}
+    output_path = tmp_path / "snapshot.yaml"
+
+    match.write_parameters_snapshot(numpy_state, output_path)
+
+    loaded = yaml.safe_load(output_path.read_text())
+    assert loaded == {"aquifer.radius": pytest.approx(55.94746325289693)}
+    assert isinstance(loaded["aquifer.radius"], float)

@@ -17,14 +17,14 @@ from nagcsu import simulate
 def test_common_working_directory_finds_shared_ancestor(tmp_path) -> None:
     deck = tmp_path / "Data" / "deck.DATA"
     output_dir = tmp_path / "runs" / "run_0001"
-    assert simulate.common_working_directory([deck, output_dir]) == tmp_path
+    assert simulate.get_common_working_directory([deck, output_dir]) == tmp_path
 
 
-def test_common_working_directory_falls_back_when_no_ancestor_is_shared() -> None:
+def test_get_common_working_directory_falls_back_when_no_ancestor_is_shared() -> None:
     # Different drive roots on Windows, or otherwise unrelated paths:
     # commonpath raises ValueError, so fall back to the first path's parent.
     with unittest.mock.patch("os.path.commonpath", side_effect=ValueError):
-        result = simulate.common_working_directory([
+        result = simulate.get_common_working_directory([
             pathlib.Path("/a/b/deck.DATA"),
             pathlib.Path("/c/d/output"),
         ])

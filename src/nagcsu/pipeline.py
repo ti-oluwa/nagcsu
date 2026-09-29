@@ -5,6 +5,8 @@ import itertools
 import pathlib
 import typing
 
+import pandas
+
 from nagcsu import history, ledger, objective, parameters, prt, simulate, summary
 from nagcsu.config import ProjectConfig
 from nagcsu.deck import Deck
@@ -46,6 +48,25 @@ class RunOutcome:
     outcome for a search strategy to hit; this field is how the caller
     tells that apart from a state that scored badly.
     """
+
+
+def load_observed_history(config: ProjectConfig) -> pandas.DataFrame:
+    """Load the project's observed history frame using its own config.
+
+    The one place `execute` needs this; factored out so any other
+    caller wanting the same observed frame (`nagcsu.plotting`, for
+    example) does not have to repeat `config.history`'s five fields by
+    hand.
+    """
+    return history.load_observed_history(
+        config.get_resolved_path(config.history.path),
+        file_format=config.history.file_format,
+        sheet_name=config.history.sheet_name,
+        date_column=config.history.date_column,
+        well_column=config.history.well_column,
+        column_map=config.history.column_map,
+        wells=list(config.wells),
+    )
 
 
 def execute(
@@ -108,15 +129,7 @@ def execute(
     objective_result = None
     if score and run_result.case_basename is not None:
         simulated_frame = summary.load_summary(run_result.case_basename, wells=list(config.wells))
-        observed_frame = history.load_observed_history(
-            config.get_resolved_path(config.history.path),
-            file_format=config.history.file_format,
-            sheet_name=config.history.sheet_name,
-            date_column=config.history.date_column,
-            well_column=config.history.well_column,
-            column_map=config.history.column_map,
-            wells=list(config.wells),
-        )
+        observed_frame = load_observed_history(config)
         objective_result = objective.score(
             simulated_frame,
             observed_frame,

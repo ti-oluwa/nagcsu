@@ -104,7 +104,7 @@ invocation runs in this sandbox without OPM Flow being available at all.
 
 `nagcsu.parameters.PARAMETERS` is a flat registry of every tunable
 parameter, each tagged with the tuning priority group it belongs to
-(`nagcsu.constants.TUNING_PRIORITY_ORDER`):
+(`nagcsu.constants.GROUP_TUNING_PRIORITY_ORDER`):
 
 | Group | Priority | Parameters |
 | --- | --- | --- |

@@ -12,6 +12,7 @@ import click
 from nagcsu import __version__, constants
 from nagcsu.cli.commands.init import init
 from nagcsu.cli.commands.match import match
+from nagcsu.cli.commands.plot import plot
 from nagcsu.cli.commands.report import report
 from nagcsu.cli.commands.run import run
 from nagcsu.cli.commands.sanity import sanity
@@ -34,8 +35,9 @@ def cli(ctx: click.Context, config_path: str) -> None:
     Start with `nagcsu init` in the repository root, then `nagcsu run`
     for a baseline simulation, `nagcsu sanity check-init` to confirm it
     started from a physically plausible state, `nagcsu match auto` to
-    calibrate, and `nagcsu report show` to see how a run's parameter
-    state was found.
+    calibrate, `nagcsu plot convergence` and `nagcsu plot match` to see
+    it, and `nagcsu report show` to see how a run's parameter state was
+    found.
     """
     ctx.ensure_object(dict)
     ctx.obj["config_path"] = pathlib.Path(config_path)
@@ -47,6 +49,7 @@ cli.add_command(match)
 cli.add_command(sensitivity_)
 cli.add_command(report)
 cli.add_command(sanity)
+cli.add_command(plot)
 
 
 def main() -> None:

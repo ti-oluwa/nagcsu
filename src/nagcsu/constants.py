@@ -45,7 +45,7 @@ within the usual 50 to 70 percent range. The remaining fraction is
 working gas, cycled in and out each period.
 """
 
-TUNING_PRIORITY_ORDER: typing.Final[tuple[str, ...]] = (
+GROUP_TUNING_PRIORITY_ORDER: typing.Final[tuple[str, ...]] = (
     "aquifer",
     "permeability_multiplier",
     "sgof_shape",
