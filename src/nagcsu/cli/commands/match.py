@@ -2,13 +2,16 @@
 
 import dataclasses
 import pathlib
+import time
+import typing
 
 import click
 import yaml
 
 from nagcsu import constants, ledger, parameters, pipeline, reporting
-from nagcsu.algorithms import coordinate_descent, grid, random_search
-from nagcsu.cli import context
+from nagcsu.algorithms import coordinate_descent, grid, random_search, sensitivity
+from nagcsu.algorithms.base import get_current_tag
+from nagcsu.cli import context, display
 
 
 @click.group(name="match")
@@ -19,19 +22,7 @@ def match() -> None:
 @match.command(name="list-parameters")
 def list_parameters() -> None:
     """List every tunable parameter, its group, bounds and default."""
-    for group in constants.GROUP_TUNING_PRIORITY_ORDER:
-        specs = parameters.get_parameters_in_group(group)
-        if not specs:
-            continue
-        click.echo(
-            f"\n{group} (priority {constants.GROUP_TUNING_PRIORITY_ORDER.index(group) + 1})"
-        )
-        for spec in specs:
-            click.echo(
-                f"  {spec.name:<40} default={spec.default:<12g} "
-                f"bounds=({spec.bounds[0]:g}, {spec.bounds[1]:g})"
-            )
-            click.echo(f"      {spec.description}")
+    display.console.print(display.parameters_table())
 
 
 @match.command(name="sweep")
@@ -83,15 +74,20 @@ def sweep(
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
+    sweep_records: list[ledger.RunRecord] = []
+
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
         record = pipeline.build_run_record(
             outcome,
             group=group_label or parameters.PARAMETERS[param_name].group,
             strategy="sweep",
             note=f"sweep of {param_name}",
+            tuned_parameters=[param_name],
+            stage="sweep",
         )
         ledger.append(ledger_path, record)
-        context.echo_outcome_header(record)
+        sweep_records.append(record)
+        display.print_outcome_line(record)
 
     evaluate = pipeline.make_evaluate(
         project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
@@ -103,6 +99,11 @@ def sweep(
         max_evaluations=max_evaluations,
     )
     context.warn_if_every_trial_failed(result.best.j, command="match sweep")
+    display.console.print(
+        display.trials_table(
+            sweep_records, title=f"Sweep of {param_name}", value_parameter=param_name
+        )
+    )
     click.echo(f"\nBest: {param_name}={result.best.state[param_name]:g}, J={result.best.j:.4f}")
 
 
@@ -142,15 +143,21 @@ def random_(
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
+    involved_groups = sorted({parameters.PARAMETERS[name].group for name in param_names})
+    random_records: list[ledger.RunRecord] = []
+
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
         record = pipeline.build_run_record(
             outcome,
-            group=None,
+            group=", ".join(involved_groups),
             strategy="random",
             note=f"random search over {list(param_names)}",
+            tuned_parameters=list(param_names),
+            stage="random",
         )
         ledger.append(ledger_path, record)
-        context.echo_outcome_header(record)
+        random_records.append(record)
+        display.print_outcome_line(record)
 
     evaluate = pipeline.make_evaluate(
         project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
@@ -163,6 +170,10 @@ def random_(
         seed=seed,
     )
     context.warn_if_every_trial_failed(result.best.j, command="match random")
+    ranked = sorted(random_records, key=lambda r: (r.j is None, r.j if r.j is not None else 0.0))
+    display.console.print(
+        display.trials_table(ranked[:10], title="Ten best random trials (values in ledger)")
+    )
     click.echo(f"\nBest J={result.best.j:.4f} at:")
     for name in param_names:
         click.echo(f"  {name} = {result.best.state[name]:g}")
@@ -229,6 +240,74 @@ def random_(
     ),
 )
 @click.option(
+    "--param",
+    "param_names",
+    multiple=True,
+    help=(
+        "Tune only this parameter, repeatable (e.g. --param aquifer.radius --param "
+        "sgof.sorg). Groups are derived from the parameters and keep priority order. "
+        "Run `nagcsu match list-parameters` for valid names."
+    ),
+)
+@click.option(
+    "--range",
+    "range_options",
+    multiple=True,
+    help=(
+        "Search range for one parameter as NAME=LOW:HIGH, repeatable, e.g. "
+        "--range aquifer.radius=12000:20000. Must sit inside the parameter's registered "
+        "bounds. A parameter given only here is tuned even without --param."
+    ),
+)
+@click.option(
+    "--start",
+    "start_options",
+    multiple=True,
+    help=(
+        "Start the search from this value instead of the default, as NAME=VALUE, "
+        "repeatable. Use it to continue from a value found earlier."
+    ),
+)
+@click.option(
+    "--order",
+    type=click.Choice(["priority", "sensitivity"]),
+    default="priority",
+    show_default=True,
+    help=(
+        "priority: fixed group order from the methodology. sensitivity: first run a "
+        "one-at-a-time screen, then tune groups from most to least sensitive, most "
+        "sensitive parameter first, and skip parameters below --min-relative-swing. "
+        "Costs 2 simulations per parameter up front and usually saves more than that."
+    ),
+)
+@click.option(
+    "--group-rank",
+    "group_rank_method",
+    type=click.Choice(sensitivity.GROUP_RANK_METHODS),
+    default="mean_rank",
+    show_default=True,
+    help="How groups are ordered when '--order sensitivity' is used.",
+)
+@click.option(
+    "--min-relative-swing",
+    default=0.02,
+    show_default=True,
+    help="With '--order sensitivity', skip parameters whose swing is below this fraction of the largest swing.",
+)
+@click.option(
+    "--perturbation-fraction",
+    default=0.15,
+    show_default=True,
+    help="With '--order sensitivity', fraction of each parameter's range perturbed in each direction.",
+)
+@click.option(
+    "--window-shrink",
+    default=coordinate_descent.DEFAULT_WINDOW_SHRINK,
+    show_default=True,
+    help="Each pass after the first searches a window this fraction as wide as the last, around the value found so far. 1 keeps full-range passes.",
+)
+@click.option("--quiet", is_flag=True, default=False, help="Do not print a line per trial.")
+@click.option(
     "--weights",
     default=None,
     help=(
@@ -250,6 +329,15 @@ def auto(
     max_evals_per_parameter: int,
     min_improvement: float,
     starts: int,
+    param_names: tuple[str, ...],
+    range_options: tuple[str, ...],
+    start_options: tuple[str, ...],
+    order: str,
+    group_rank_method: str,
+    min_relative_swing: float,
+    perturbation_fraction: float,
+    window_shrink: float,
+    quiet: bool,
     weights: str | None,
 ) -> None:
     """Auto-tune one parameter group at a time until J reaches its target.
@@ -264,9 +352,9 @@ def auto(
     directory, alongside a `parameters.yaml` snapshot of exactly the
     state that produced it.
     """
+    started_at = time.perf_counter()
     project_config, base_deck = context.load(ctx)
     resolved_target_j = target_j if target_j is not None else project_config.objective.target_j
-    ordered_groups = groups.split(",") if groups else list(constants.GROUP_TUNING_PRIORITY_ORDER)
 
     if weights:
         overrides = parse_weight_overrides(weights)
@@ -276,10 +364,15 @@ def auto(
             objective=dataclasses.replace(project_config.objective, weights=merged_weights),
         )
 
-    group_parameter_bounds = {
-        group: {spec.name: spec.bounds for spec in parameters.get_parameters_in_group(group)}
-        for group in ordered_groups
-    }
+    ranges = parse_range_options(range_options)
+    start_overrides = parse_start_options(start_options)
+    ordered_groups, group_parameter_bounds = resolve_tuning_space(
+        groups=groups.split(",") if groups else None,
+        param_names=param_names,
+        ranges=ranges,
+    )
+    start_state = parameters.default_state()
+    start_state.update(start_overrides)
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
     failed_trial_count = 0
@@ -288,19 +381,70 @@ def auto(
         nonlocal failed_trial_count
         if outcome.simulation_error:
             failed_trial_count += 1
+        tag = get_current_tag()
+        is_screen = tag is not None and (tag.stage or "").startswith("sensitivity")
         record = pipeline.build_run_record(
             outcome,
             group=None,
-            strategy="coordinate_descent",
-            note="auto-tune trial",
+            strategy="sensitivity" if is_screen else "coordinate_descent",
+            note=f"auto-tune {tag.stage}" if tag and tag.stage else "auto-tune trial",
         )
         ledger.append(ledger_path, record)
+        if not quiet:
+            display.print_outcome_line(record)
 
     evaluate = pipeline.make_evaluate(
         project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
     )
+
+    screen_results: list[sensitivity.SensitivityResult] = []
+    ranked_groups: list[sensitivity.GroupSensitivity] = []
+    if order == "sensitivity":
+        flat_bounds = {
+            name: bounds
+            for group in group_parameter_bounds.values()
+            for name, bounds in group.items()
+        }
+        parameter_groups = {
+            name: group for group, members in group_parameter_bounds.items() for name in members
+        }
+        click.echo(f"Screening {len(flat_bounds)} parameter(s) for sensitivity first...")
+        screen_results, _ = sensitivity.run(
+            start_state,
+            flat_bounds,
+            evaluate,
+            perturbation_fraction=perturbation_fraction,
+            parameter_groups=parameter_groups,
+        )
+        context.warn_if_every_trial_failed(
+            min((result.base_j for result in screen_results), default=float("inf")),
+            command="match auto (sensitivity screen)",
+        )
+        swings = {result.parameter: result.swing for result in screen_results}
+        ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
+        plan = sensitivity.build_tuning_plan(
+            ranked_groups, swings, min_relative_swing=min_relative_swing
+        )
+        if not plan:
+            raise click.ClickException("The sensitivity screen left no parameter worth tuning.")
+        ranks = sensitivity.rank_parameters(swings)
+        display.console.print(display.sensitivity_table(screen_results, parameter_groups, ranks))
+        display.console.print(
+            display.group_sensitivity_table(ranked_groups, method=group_rank_method)
+        )
+        skipped = sorted(set(flat_bounds) - {name for _, names in plan for name in names})
+        if skipped:
+            click.echo(
+                f"Skipped as insensitive (< {min_relative_swing:g} of largest swing): {', '.join(skipped)}"
+            )
+        ordered_groups = [group for group, _ in plan]
+        group_parameter_bounds = {
+            group: {name: flat_bounds[name] for name in names} for group, names in plan
+        }
+        click.echo(f"Tuning order: {' > '.join(ordered_groups)}")
+
     result, outcomes = coordinate_descent.multi_start_search(
-        parameters.default_state(),
+        start_state,
         ordered_groups,
         group_parameter_bounds,
         evaluate,
@@ -309,6 +453,7 @@ def auto(
         xatol_fraction=xatol_fraction,
         max_evaluations_per_parameter=max_evals_per_parameter,
         min_relative_improvement=min_improvement,
+        window_shrink=window_shrink,
         n_starts=starts,
     )
     context.warn_if_every_trial_failed(result.best.j, command="match auto")
@@ -317,13 +462,16 @@ def auto(
     if failed_trial_count:
         click.echo(f"  ({failed_trial_count} trial(s) failed to simulate and were skipped)")
 
-    for outcome in outcomes:
-        click.echo(
-            f"  {outcome.group}: J {outcome.starting_j:.4f} -> "
-            f"{outcome.ending_j:.4f} (target reached: {outcome.reached_target})"
-        )
+    display.console.print(display.group_outcomes_table(outcomes))
+    display.console.print(display.parameter_steps_table(outcomes))
     click.echo(f"\nBest J={result.best.j:.4f}")
 
+    changed = [
+        name
+        for name, value in result.best.state.items()
+        if abs(value - parameters.default_state().get(name, value)) > 1e-12
+        and name in parameters.PARAMETERS
+    ]
     final_run_id = "auto_final"
     final_outcome = pipeline.execute(
         project_config,
@@ -334,9 +482,11 @@ def auto(
     )
     final_record = pipeline.build_run_record(
         final_outcome,
-        group=ordered_groups[-1] if ordered_groups else None,
+        group=", ".join(sorted({parameters.PARAMETERS[name].group for name in changed})) or None,
         strategy="coordinate_descent",
         note=f"auto-tune final state after {len(result.trials)} trials across {[outcome.group for outcome in outcomes]}",
+        tuned_parameters=changed,
+        stage="final",
     )
     ledger.append(ledger_path, final_record)
 
@@ -350,6 +500,23 @@ def auto(
 
     parameters_snapshot_path = final_outcome.output_dir / "parameters.yaml"
     write_parameters_snapshot(final_outcome.resolved_state, parameters_snapshot_path)
+
+    all_records = ledger.load(ledger_path)
+    starting_j = result.trials[0].j if result.trials else None
+    if final_record.j is not None:
+        display.console.print(display.objective_table(final_record, target_j=resolved_target_j))
+    display.console.print(
+        display.state_table(
+            final_record.parameter_state, title="Parameters changed", show_all=False
+        )
+    )
+    summary = f"{len(result.trials)} trials in {time.perf_counter() - started_at:.0f}s"
+    if starting_j and final_record.j is not None and starting_j != float("inf"):
+        summary += f", J {starting_j:.4f} -> {final_record.j:.4f} ({(starting_j - final_record.j) / starting_j * 100:.1f}% better)"
+    click.echo(summary)
+    for step in reporting.next_steps(all_records, target_j=resolved_target_j):
+        click.echo(f"- {step}")
+
     click.echo(f"Final calibrated deck: {final_outcome.deck_path}")
     click.echo(f"Parameter snapshot: {parameters_snapshot_path}")
 
@@ -359,8 +526,104 @@ def auto(
             report_path,
             prt_report=final_outcome.prt_report,
             group_outcomes=outcomes,
+            sensitivity_results=screen_results or None,
+            group_sensitivities=ranked_groups or None,
+            records=all_records,
+            target_j=resolved_target_j,
         )
         click.echo(f"Report: {written}")
+
+
+def parse_range_options(raw: typing.Sequence[str]) -> dict[str, tuple[float, float]]:
+    """Parse repeated `--range NAME=LOW:HIGH` values.
+
+    :raises click.BadParameter: for malformed text, an unknown parameter,
+        `low >= high`, or a range outside the parameter's registered bounds.
+    """
+    ranges: dict[str, tuple[float, float]] = {}
+    for item in raw:
+        name, _, span = item.partition("=")
+        low_text, _, high_text = span.partition(":")
+        if name not in parameters.PARAMETERS or not low_text or not high_text:
+            raise click.BadParameter(
+                f"Malformed or unknown --range {item!r}; expected NAME=LOW:HIGH with a name "
+                f"from `nagcsu match list-parameters`."
+            )
+        try:
+            low, high = float(low_text), float(high_text)
+        except ValueError as error:
+            raise click.BadParameter(f"--range {item!r} has a non-numeric bound.") from error
+        bound_low, bound_high = parameters.PARAMETERS[name].bounds
+        if low >= high or low < bound_low or high > bound_high:
+            raise click.BadParameter(
+                f"--range for {name} must satisfy {bound_low:g} <= LOW < HIGH <= {bound_high:g}; got {low:g}:{high:g}."
+            )
+        ranges[name] = (low, high)
+    return ranges
+
+
+def parse_start_options(raw: typing.Sequence[str]) -> dict[str, float]:
+    """Parse repeated `--start NAME=VALUE` values, checking bounds."""
+    starts: dict[str, float] = {}
+    for item in raw:
+        name, _, value_text = item.partition("=")
+        if name not in parameters.PARAMETERS or not value_text:
+            raise click.BadParameter(
+                f"Malformed or unknown --start {item!r}; expected NAME=VALUE."
+            )
+        try:
+            value = float(value_text)
+        except ValueError as error:
+            raise click.BadParameter(f"--start {item!r} is not a number.") from error
+        low, high = parameters.PARAMETERS[name].bounds
+        if not low <= value <= high:
+            raise click.BadParameter(f"--start for {name} must be within {low:g} to {high:g}.")
+        starts[name] = value
+    return starts
+
+
+def resolve_tuning_space(
+    *,
+    groups: list[str] | None,
+    param_names: typing.Sequence[str],
+    ranges: dict[str, tuple[float, float]],
+) -> tuple[list[str], dict[str, dict[str, tuple[float, float]]]]:
+    """Work out which groups and parameters `match auto` may tune, and over what range.
+
+    :param groups: Groups to consider, in the order given, or `None` for
+        the full priority order.
+    :param param_names: Parameters to restrict tuning to; empty means no
+        restriction, apart from any parameter named in `ranges`.
+    :param ranges: Per-parameter search range overrides.
+    :returns: `(ordered_groups, {group: {parameter: (low, high)}})`, with
+        groups that end up empty removed.
+    :raises click.BadParameter: for unknown groups or parameters.
+    :raises click.UsageError: when the filters leave nothing to tune.
+    """
+    ordered = groups if groups else list(constants.GROUP_TUNING_PRIORITY_ORDER)
+    unknown_groups = [g for g in ordered if g not in constants.GROUP_TUNING_PRIORITY_ORDER]
+    if unknown_groups:
+        raise click.BadParameter(
+            f"Unknown group(s) {unknown_groups}. Valid groups: {list(constants.GROUP_TUNING_PRIORITY_ORDER)}"
+        )
+    unknown = [name for name in param_names if name not in parameters.PARAMETERS]
+    if unknown:
+        raise click.BadParameter(
+            f"Unknown parameter(s): {unknown}. Run `nagcsu match list-parameters` to see valid names."
+        )
+    requested = set(param_names) | set(ranges)
+    space: dict[str, dict[str, tuple[float, float]]] = {}
+    for group in ordered:
+        members = {
+            spec.name: ranges.get(spec.name, spec.bounds)
+            for spec in parameters.get_parameters_in_group(group)
+            if not requested or spec.name in requested
+        }
+        if members:
+            space[group] = members
+    if not space:
+        raise click.UsageError("The --groups, --param and --range filters leave nothing to tune.")
+    return list(space), space
 
 
 def parse_weight_overrides(raw: str) -> dict[str, float]:

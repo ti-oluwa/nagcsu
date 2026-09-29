@@ -11,6 +11,22 @@ function instead of a real OPM Flow run. The shared types below live in
 `nagcsu.algorithms.base`; re-exported here for a shorter import path.
 """
 
-from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of
+from nagcsu.algorithms.base import (
+    EvaluateFunction,
+    SearchResult,
+    Trial,
+    TrialTag,
+    best_of,
+    get_current_tag,
+    tag_trials,
+)
 
-__all__ = ["EvaluateFunction", "SearchResult", "Trial", "best_of"]
+__all__ = [
+    "EvaluateFunction",
+    "SearchResult",
+    "Trial",
+    "TrialTag",
+    "best_of",
+    "get_current_tag",
+    "tag_trials",
+]

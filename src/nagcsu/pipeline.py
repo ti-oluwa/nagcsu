@@ -8,6 +8,7 @@ import typing
 import pandas
 
 from nagcsu import history, ledger, objective, parameters, prt, simulate, summary
+from nagcsu.algorithms.base import get_current_tag
 from nagcsu.config import ProjectConfig
 from nagcsu.deck import Deck
 from nagcsu.exceptions import SimulationError
@@ -244,20 +245,40 @@ def make_evaluate_with_breakdown(
 
 
 def build_run_record(
-    outcome: RunOutcome, *, group: str | None, strategy: str | None, note: str
+    outcome: RunOutcome,
+    *,
+    group: str | None,
+    strategy: str | None,
+    note: str,
+    tuned_parameters: typing.Sequence[str] | None = None,
+    stage: str | None = None,
 ) -> ledger.RunRecord:
     """Build a `ledger.RunRecord` from a `RunOutcome`.
+
+    Group, tuned parameters and stage default to whatever the active
+    `nagcsu.algorithms.base.tag_trials` block says the search strategy
+    was doing when this run was evaluated, so a caller logging trials
+    from inside a strategy does not have to pass them. An explicit
+    argument always wins over the tag.
 
     The single place every CLI command turns a run's outcome into its
     logged record, so a fix here (for example, surfacing
     `simulation_error`) reaches every command that logs a run instead of
     needing the same fix repeated in each one.
     """
+    tag = get_current_tag()
+    resolved_group = group if group is not None else (tag.group if tag else None)
+    resolved_parameters = (
+        list(tuned_parameters)
+        if tuned_parameters is not None
+        else (list(tag.parameters) if tag else [])
+    )
+    resolved_stage = stage if stage is not None else (tag.stage if tag else None)
     return ledger.RunRecord(
         run_id=outcome.run_id,
         created_at=ledger.timestamp_now(),
         parameter_state=outcome.resolved_state,
-        group=group,
+        group=resolved_group,
         strategy=strategy,
         j=outcome.objective_result.j if outcome.objective_result else None,
         vector_nrmse=(
@@ -271,4 +292,14 @@ def build_run_record(
         prt_is_clean=outcome.prt_report.is_clean if outcome.prt_report else None,
         note=note,
         simulation_error=outcome.simulation_error,
+        tuned_parameters=resolved_parameters,
+        tuned_values={
+            name: outcome.resolved_state[name]
+            for name in resolved_parameters
+            if name in outcome.resolved_state
+        },
+        stage=resolved_stage,
+        objective_weights=(
+            dict(outcome.objective_result.weights) if outcome.objective_result else None
+        ),
     )

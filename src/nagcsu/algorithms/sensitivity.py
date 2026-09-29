@@ -10,7 +10,9 @@ attention they are likely to reward.
 import dataclasses
 import typing
 
-from nagcsu.algorithms.base import EvaluateFunction, Trial
+import scipy.stats
+
+from nagcsu.algorithms.base import EvaluateFunction, Trial, tag_trials
 from nagcsu.pipeline import EvaluationBreakdown
 
 DetailedEvaluateFunction = typing.Callable[[dict[str, float]], EvaluationBreakdown]
@@ -41,6 +43,12 @@ class SensitivityResult:
     when this single parameter was varied across its perturbation range.
     """
 
+    low_value: float = 0.0
+    """Parameter value used for the low probe."""
+
+    high_value: float = 0.0
+    """Parameter value used for the high probe."""
+
 
 def run(
     base_state: dict[str, float],
@@ -48,6 +56,7 @@ def run(
     evaluate: EvaluateFunction,
     *,
     perturbation_fraction: float = 0.15,
+    parameter_groups: dict[str, str] | None = None,
 ) -> tuple[list[SensitivityResult], list[Trial]]:
     """Rank parameters by their local one-at-a-time effect on J.
 
@@ -57,12 +66,16 @@ def run(
         and clamped back into `(low, high)`.
     :param perturbation_fraction: Fraction of each parameter's bound
         range to perturb by, in each direction.
+    :param parameter_groups: `{parameter: group}`, used only to label
+        each probe's group in the run ledger.
     :returns: One `SensitivityResult` per parameter, sorted by
         descending `swing` (most influential first), plus every trial
         run so the caller can log them to the ledger.
     """
+    groups = parameter_groups or {}
     trials: list[Trial] = []
-    base_j = evaluate(base_state)
+    with tag_trials(stage="sensitivity/base"):
+        base_j = evaluate(base_state)
     trials.append(Trial(state=dict(base_state), j=base_j))
 
     results: list[SensitivityResult] = []
@@ -75,12 +88,22 @@ def run(
 
         low_state = dict(base_state)
         low_state[parameter] = low_value
-        j_low = evaluate(low_state)
+        with tag_trials(
+            group=groups.get(parameter),
+            parameters=(parameter,),
+            stage="sensitivity/low",
+        ):
+            j_low = evaluate(low_state)
         trials.append(Trial(state=low_state, j=j_low))
 
         high_state = dict(base_state)
         high_state[parameter] = high_value
-        j_high = evaluate(high_state)
+        with tag_trials(
+            group=groups.get(parameter),
+            parameters=(parameter,),
+            stage="sensitivity/high",
+        ):
+            j_high = evaluate(high_state)
         trials.append(Trial(state=high_state, j=j_high))
 
         results.append(
@@ -90,6 +113,8 @@ def run(
                 j_at_low=j_low,
                 j_at_high=j_high,
                 swing=abs(j_high - j_low),
+                low_value=low_value,
+                high_value=high_value,
             )
         )
 
@@ -112,7 +137,13 @@ class DetailedSensitivityResult:
     `SensitivityResult.swing`.
     """
 
-    vector_swings: dict[str, float]
+    low_value: float = 0.0
+    """Parameter value used for the low probe."""
+
+    high_value: float = 0.0
+    """Parameter value used for the high probe."""
+
+    vector_swings: dict[str, float] = dataclasses.field(default_factory=dict)
     """`abs(high - low)` per scored vector's own NRMSE, keyed the same
     way as `nagcsu.objective.SCORED_FIELD_VECTORS`. This is the number
     that answers "did this parameter actually help pressure or water
@@ -129,6 +160,7 @@ def run_detailed(
     evaluate: DetailedEvaluateFunction,
     *,
     perturbation_fraction: float = 0.15,
+    parameter_groups: dict[str, str] | None = None,
 ) -> list[DetailedSensitivityResult]:
     """Like `run`, but ranks parameters per scored vector, not only by combined `J`.
 
@@ -148,7 +180,9 @@ def run_detailed(
         descending combined `swing` (most influential on `J` first);
         read `vector_swings` directly to rank by one vector instead.
     """
-    base_breakdown = evaluate(base_state)
+    groups = parameter_groups or {}
+    with tag_trials(stage="sensitivity/base"):
+        base_breakdown = evaluate(base_state)
 
     results: list[DetailedSensitivityResult] = []
     for parameter, (low, high) in parameter_bounds.items():
@@ -160,11 +194,21 @@ def run_detailed(
 
         low_state = dict(base_state)
         low_state[parameter] = low_value
-        breakdown_low = evaluate(low_state)
+        with tag_trials(
+            group=groups.get(parameter),
+            parameters=(parameter,),
+            stage="sensitivity/low",
+        ):
+            breakdown_low = evaluate(low_state)
 
         high_state = dict(base_state)
         high_state[parameter] = high_value
-        breakdown_high = evaluate(high_state)
+        with tag_trials(
+            group=groups.get(parameter),
+            parameters=(parameter,),
+            stage="sensitivity/high",
+        ):
+            breakdown_high = evaluate(high_state)
 
         vector_names = set(breakdown_low.vector_nrmse) | set(breakdown_high.vector_nrmse)
         vector_swings = {
@@ -179,9 +223,168 @@ def run_detailed(
                 parameter=parameter,
                 base_j=base_breakdown.j,
                 swing=abs(breakdown_high.j - breakdown_low.j),
+                low_value=low_value,
+                high_value=high_value,
                 vector_swings=vector_swings,
             )
         )
 
     results.sort(key=lambda result: result.swing, reverse=True)
     return results
+
+
+GROUP_RANK_METHODS: typing.Final[tuple[str, ...]] = ("mean_rank", "rank_sum", "swing_share")
+"""Ways `rank_groups` can order tuning groups; see that function."""
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class GroupSensitivity:
+    """How sensitive J is to one tuning group, summarized over its parameters."""
+
+    group: str
+    """Tuning group name."""
+
+    position: int
+    """1-based place in the group ranking; 1 is the most sensitive group."""
+
+    parameters: list[str]
+    """The group's parameters, most sensitive first."""
+
+    parameter_ranks: dict[str, float]
+    """Rank of each parameter among ALL tested parameters (1 is the
+    highest swing; ties share the average of the ranks they span)."""
+
+    rank_sum: float
+    """Sum of `parameter_ranks`. Lower means more sensitive, but grows
+    with the number of parameters in the group."""
+
+    mean_rank: float
+    """`rank_sum / len(parameters)`. Lower means more sensitive, and is
+    comparable between groups of different sizes."""
+
+    best_rank: float
+    """Rank of the group's single most sensitive parameter."""
+
+    total_swing: float
+    """Sum of the group's parameter swings, in units of J."""
+
+    swing_share: float
+    """`total_swing` as a fraction of every tested parameter's swing."""
+
+    score: float
+    """The number the group was ordered by under the chosen method."""
+
+
+def rank_parameters(parameter_swings: dict[str, float]) -> dict[str, float]:
+    """Rank parameters by swing, 1 for the largest.
+
+    Ties (most often several parameters with a swing of exactly zero)
+    receive the average of the ranks they span, so a block of equally
+    dead parameters does not look artificially ordered.
+    """
+    if not parameter_swings:
+        return {}
+    names = list(parameter_swings)
+    ranks = scipy.stats.rankdata([-parameter_swings[name] for name in names], method="average")
+    return {name: float(rank) for name, rank in zip(names, ranks, strict=True)}
+
+
+def rank_groups(
+    parameter_swings: dict[str, float],
+    parameter_groups: dict[str, str],
+    *,
+    method: str = "mean_rank",
+) -> list[GroupSensitivity]:
+    """Order tuning groups from most to least sensitive.
+
+    Every parameter is first ranked by its own swing (see
+    `rank_parameters`). A group is then scored from the ranks of its
+    members:
+
+    - `"mean_rank"` (default): average member rank, ascending. Dividing
+      by the group size matters: a plain rank sum rewards small groups.
+      A one-parameter group whose parameter ranks 5th scores 5, while a
+      four-parameter group holding ranks 1, 2, 3 and 4 scores 10 and
+      loses, even though it holds the four most sensitive parameters.
+    - `"rank_sum"`: total of member ranks, ascending. Included because
+      it is the obvious first idea; it is only fair when every group has
+      the same number of parameters.
+    - `"swing_share"`: total swing in J units, descending. Ranks throw
+      away magnitude (a parameter that moves J ten times more than the
+      next still only ranks one place higher), so this is the one to
+      read when the ranking and the raw numbers seem to disagree.
+
+    Ties on the primary score are broken by the best single-parameter
+    rank, then by total swing.
+
+    :param parameter_swings: `{parameter: swing}` for every tested parameter.
+    :param parameter_groups: `{parameter: group}` covering the same names.
+    :param method: One of `GROUP_RANK_METHODS`.
+    :raises ValueError: if `method` is not recognized.
+    """
+    if method not in GROUP_RANK_METHODS:
+        raise ValueError(
+            f"Unknown group ranking method {method!r}; use one of {GROUP_RANK_METHODS}"
+        )
+
+    ranks = rank_parameters(parameter_swings)
+    grand_total = sum(parameter_swings.values())
+    members: dict[str, list[str]] = {}
+    for parameter in parameter_swings:
+        members.setdefault(parameter_groups[parameter], []).append(parameter)
+
+    summaries: list[GroupSensitivity] = []
+    for group, names in members.items():
+        names = sorted(names, key=lambda name: ranks[name])
+        rank_sum = sum(ranks[name] for name in names)
+        mean_rank = rank_sum / len(names)
+        total_swing = sum(parameter_swings[name] for name in names)
+        score = {"mean_rank": mean_rank, "rank_sum": rank_sum, "swing_share": total_swing}[method]
+        summaries.append(
+            GroupSensitivity(
+                group=group,
+                position=0,
+                parameters=names,
+                parameter_ranks={name: ranks[name] for name in names},
+                rank_sum=rank_sum,
+                mean_rank=mean_rank,
+                best_rank=ranks[names[0]],
+                total_swing=total_swing,
+                swing_share=total_swing / grand_total if grand_total > 0 else 0.0,
+                score=score,
+            )
+        )
+
+    direction = -1.0 if method == "swing_share" else 1.0
+    summaries.sort(
+        key=lambda summary: (direction * summary.score, summary.best_rank, -summary.total_swing)
+    )
+    return [
+        dataclasses.replace(summary, position=index) for index, summary in enumerate(summaries, 1)
+    ]
+
+
+def build_tuning_plan(
+    group_sensitivities: list[GroupSensitivity],
+    parameter_swings: dict[str, float],
+    *,
+    min_relative_swing: float = 0.0,
+) -> list[tuple[str, list[str]]]:
+    """Turn a sensitivity screen into a tuning order for coordinate descent.
+
+    Groups keep the order of `group_sensitivities`. Inside a group,
+    parameters go most sensitive first, and any parameter whose swing is
+    below `min_relative_swing` times the largest swing anywhere is
+    dropped, since spending simulations on it is the main waste in a
+    fixed-order descent. A group left with no parameters is dropped too.
+
+    :returns: `[(group, [parameter, ...]), ...]` in tuning order.
+    """
+    largest = max(parameter_swings.values(), default=0.0)
+    threshold = largest * min_relative_swing
+    plan: list[tuple[str, list[str]]] = []
+    for summary in group_sensitivities:
+        kept = [name for name in summary.parameters if parameter_swings[name] >= threshold]
+        if kept:
+            plan.append((summary.group, kept))
+    return plan

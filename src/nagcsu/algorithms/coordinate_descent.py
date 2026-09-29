@@ -5,7 +5,7 @@ import random
 
 import scipy.optimize
 
-from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of
+from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of, tag_trials
 
 DEFAULT_XATOL_FRACTION = 0.02
 """Default `xatol_fraction` for `search`: locate each parameter to within
@@ -17,6 +17,47 @@ DEFAULT_MAX_EVALUATIONS_PER_PARAMETER = 12
 DEFAULT_MIN_RELATIVE_IMPROVEMENT = 0.005
 """Default `min_relative_improvement` for `search`: a pass that improves J
 by less than half a percent counts as no progress."""
+
+
+DEFAULT_WINDOW_SHRINK = 0.5
+"""Default `window_shrink` for `search`: each pass after the first
+searches a window half as wide as the previous pass's, centered on the
+best value found so far."""
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ParameterOutcome:
+    """What happened while tuning one parameter once, in one pass."""
+
+    group: str
+    """Tuning group the parameter belongs to."""
+
+    parameter: str
+    """Parameter name."""
+
+    pass_index: int
+    """1-based pass over the group this happened in."""
+
+    window: tuple[float, float]
+    """`(low, high)` the one-dimensional search was confined to. Equal to
+    the parameter's full bounds on pass 1 and narrower afterwards.
+    """
+
+    start_value: float
+    """Parameter value going into this step."""
+
+    end_value: float
+    """Parameter value after this step (unchanged if nothing beat the
+    incumbent)."""
+
+    starting_j: float
+    """Best J going into this step."""
+
+    ending_j: float
+    """Best J after this step."""
+
+    evaluations: int
+    """Simulations spent on this step."""
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -35,6 +76,17 @@ class GroupOutcome:
     reached_target: bool
     """Whether `ending_j` is at or below the search's `target_j`."""
 
+    evaluations: int = 0
+    """Simulations spent on this group across all its passes."""
+
+    passes: int = 0
+    """Passes actually run over this group's parameters."""
+
+    parameter_outcomes: list[ParameterOutcome] = dataclasses.field(default_factory=list)
+    """One entry per parameter per pass, in the order they ran, so a
+    report can show which parameter inside the group did the work.
+    """
+
 
 def search(
     base_state: dict[str, float],
@@ -47,6 +99,8 @@ def search(
     xatol_fraction: float = DEFAULT_XATOL_FRACTION,
     max_evaluations_per_parameter: int = DEFAULT_MAX_EVALUATIONS_PER_PARAMETER,
     min_relative_improvement: float = DEFAULT_MIN_RELATIVE_IMPROVEMENT,
+    window_shrink: float = DEFAULT_WINDOW_SHRINK,
+    stage_prefix: str = "",
 ) -> tuple[SearchResult, list[GroupOutcome]]:
     """Tune `groups` one at a time until `target_j` is reached.
 
@@ -77,6 +131,14 @@ def search(
         group whose parameters barely influence J (an aquifer that does
         not control water cut, for example) from absorbing dozens of
         runs.
+    :param window_shrink: Pass 1 searches each parameter over its full
+        bounds. Every later pass searches a window `window_shrink ** (pass - 1)`
+        times the bound range wide, centered on the value found so far
+        and clipped to the bounds. Without this, a second pass restarts
+        the same wide bracket from scratch and mostly re-samples points
+        the first pass already saw. `1.0` restores full-range passes.
+    :param stage_prefix: Prepended to the `stage` label of every logged
+        trial, used by `multi_start_search` to tell starts apart.
     :returns: The full `SearchResult` across every trial run, plus one
         `GroupOutcome` per group that was actually touched (a group
         after the target was already reached is skipped and not
@@ -84,7 +146,8 @@ def search(
     """
     trials: list[Trial] = []
     current_best_state = dict(base_state)
-    current_best_j = evaluate(current_best_state)
+    with tag_trials(stage=f"{stage_prefix}baseline"):
+        current_best_j = evaluate(current_best_state)
     trials.append(Trial(state=dict(current_best_state), j=current_best_j))
 
     outcomes: list[GroupOutcome] = []
@@ -97,13 +160,33 @@ def search(
             continue
 
         starting_j = current_best_j
-        for _ in range(passes_per_group):
+        group_evaluations = 0
+        passes_run = 0
+        parameter_outcomes: list[ParameterOutcome] = []
+        for pass_number in range(1, passes_per_group + 1):
             if current_best_j <= target_j:
                 break
+            passes_run += 1
             j_before_pass = current_best_j
-            for parameter, (low, high) in group_bounds.items():
+            for parameter, (bound_low, bound_high) in group_bounds.items():
+                if pass_number == 1:
+                    low, high = bound_low, bound_high
+                else:
+                    half_width = (
+                        (bound_high - bound_low) * window_shrink ** (pass_number - 1) / 2.0
+                    )
+                    center = current_best_state[parameter]
+                    low = max(bound_low, center - half_width)
+                    high = min(bound_high, center + half_width)
+                if high <= low:
+                    continue
+
+                start_value = current_best_state[parameter]
+                j_before_parameter = current_best_j
+                evaluations = 0
 
                 def objective_along_one_axis(value: float, name: str = parameter) -> float:
+                    nonlocal evaluations
                     # scipy calls this with numpy.float64 values; cast
                     # to native float immediately so every trial logged
                     # from here down, not just the group's eventual best,
@@ -111,7 +194,13 @@ def search(
                     # to yaml.safe_dump.
                     candidate_state = dict(current_best_state)
                     candidate_state[name] = float(value)
-                    j = evaluate(candidate_state)
+                    with tag_trials(
+                        group=group,
+                        parameters=(name,),
+                        stage=f"{stage_prefix}descent/pass{pass_number}",
+                    ):
+                        j = evaluate(candidate_state)
+                    evaluations += 1
                     trials.append(Trial(state=dict(candidate_state), j=j))
                     return j
 
@@ -133,6 +222,21 @@ def search(
                     current_best_state[parameter] = float(result.x)  # type: ignore[attr-defined]
                     current_best_j = float(result.fun)  # type: ignore[attr-defined]
 
+                group_evaluations += evaluations
+                parameter_outcomes.append(
+                    ParameterOutcome(
+                        group=group,
+                        parameter=parameter,
+                        pass_index=pass_number,
+                        window=(low, high),
+                        start_value=start_value,
+                        end_value=current_best_state[parameter],
+                        starting_j=j_before_parameter,
+                        ending_j=current_best_j,
+                        evaluations=evaluations,
+                    )
+                )
+
             if (j_before_pass - current_best_j) < j_before_pass * min_relative_improvement:
                 break
 
@@ -142,6 +246,9 @@ def search(
                 starting_j=starting_j,
                 ending_j=current_best_j,
                 reached_target=current_best_j <= target_j,
+                evaluations=group_evaluations,
+                passes=passes_run,
+                parameter_outcomes=parameter_outcomes,
             )
         )
 
@@ -163,6 +270,7 @@ def multi_start_search(
     xatol_fraction: float = DEFAULT_XATOL_FRACTION,
     max_evaluations_per_parameter: int = DEFAULT_MAX_EVALUATIONS_PER_PARAMETER,
     min_relative_improvement: float = DEFAULT_MIN_RELATIVE_IMPROVEMENT,
+    window_shrink: float = DEFAULT_WINDOW_SHRINK,
     n_starts: int = 1,
     seed: int | None = None,
 ) -> tuple[SearchResult, list[GroupOutcome]]:
@@ -206,10 +314,12 @@ def multi_start_search(
         xatol_fraction=xatol_fraction,
         max_evaluations_per_parameter=max_evaluations_per_parameter,
         min_relative_improvement=min_relative_improvement,
+        window_shrink=window_shrink,
+        stage_prefix="start1/" if n_starts > 1 else "",
     )
 
     rng = random.Random(seed)
-    for _ in range(max(0, n_starts - 1)):
+    for start_number in range(2, max(1, n_starts) + 1):
         if best_result.best.j <= target_j:
             break
 
@@ -228,6 +338,8 @@ def multi_start_search(
             xatol_fraction=xatol_fraction,
             max_evaluations_per_parameter=max_evaluations_per_parameter,
             min_relative_improvement=min_relative_improvement,
+            window_shrink=window_shrink,
+            stage_prefix=f"start{start_number}/",
         )
         if result.best.j < best_result.best.j:
             best_result, best_outcomes = result, outcomes

@@ -3,7 +3,7 @@
 import click
 
 from nagcsu import ledger, prt, reporting
-from nagcsu.cli import context
+from nagcsu.cli import context, display
 
 
 @click.group(name="report")
@@ -26,6 +26,14 @@ def report() -> None:
     default=None,
     help="Only list records whose run_id matches this regex pattern.",
 )
+@click.option(
+    "--parameter", "parameter_name", default=None, help="Only list runs that moved this parameter."
+)
+@click.option(
+    "--stage",
+    default=None,
+    help="Only list runs whose stage starts with this text, e.g. descent or sensitivity.",
+)
 @click.option("--limit", default=20, show_default=True, help="Most recent matching runs to show.")
 @click.pass_context
 def list_(
@@ -34,6 +42,8 @@ def list_(
     group_name: str | None,
     run_id_prefix: str | None,
     run_id_regex: str | None,
+    parameter_name: str | None,
+    stage: str | None,
     limit: int,
 ) -> None:
     """List logged runs, optionally narrowed to one strategy, group or run ID family."""
@@ -49,27 +59,50 @@ def list_(
         group=group_name,
         run_id_prefix=run_id_prefix,
         run_id_regex=run_id_regex,
+        parameter=parameter_name,
+        stage=stage,
         limit=limit,
     )
     if not filtered:
         click.echo("No runs match the selected filters.")
         return
 
-    click.echo(f"{'Run ID':<20}{'Group':<24}{'Strategy':<20}{'J':>10}  Note")
-    for record in filtered:
-        if record.simulation_error:
-            j_text = "FAILED"
-        elif record.j is not None:
-            j_text = f"{record.j:.4f}"
-        else:
-            j_text = "-"
-        click.echo(
-            f"{record.run_id:<20}{(record.group or '-'):<24}{(record.strategy or '-'):<20}{j_text:>10}  {record.note}"
-        )
-
+    display.console.print(display.ledger_table(filtered))
     best = ledger.get_best_record(filtered)
     if best:
-        click.echo(f"\nBest in view: {best.run_id} (J={best.j:.4f})")
+        click.echo(f"Best in view: {best.run_id} (J={best.j:.4f})")
+
+
+@report.command(name="parameters")
+@click.option("--group", "group_name", default=None, help="Only show parameters in this group.")
+@click.pass_context
+def parameters_(ctx: click.Context, group_name: str | None) -> None:
+    """Show what has been tried per parameter and per group, to decide what to touch next.
+
+    Built from single-parameter trials in the ledger (sweeps, descent
+    probes, sensitivity probes). A parameter with many trials and a J span
+    near zero has been explored and does not matter; a parameter with a
+    large span still responds and is worth refining.
+    """
+    project_config, _ = context.load(ctx)
+    records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
+    if not records:
+        click.echo("No runs logged yet. Try `nagcsu run` first.")
+        return
+    histories = ledger.summarize_parameters(records)
+    if group_name:
+        histories = [history for history in histories if history.group == group_name]
+    if not histories:
+        click.echo("No single-parameter trials logged for the selected filter.")
+    else:
+        display.console.print(display.parameter_history_table(histories))
+    group_histories = ledger.summarize_groups(records)
+    if group_name:
+        group_histories = [history for history in group_histories if history.group == group_name]
+    if group_histories:
+        display.console.print(display.group_history_table(group_histories))
+    for step in reporting.next_steps(records):
+        click.echo(f"- {step}")
 
 
 @report.command(name="show")
@@ -78,11 +111,18 @@ def list_(
     "--output",
     "output_path",
     default=None,
-    help="Write the report to this path instead of printing it.",
+    help="Write a Markdown report to this path instead of printing tables.",
+)
+@click.option(
+    "--markdown",
+    "as_markdown",
+    is_flag=True,
+    default=False,
+    help="Print the Markdown report to the terminal instead of rich tables.",
 )
 @click.pass_context
-def show(ctx: click.Context, run_id: str, output_path: str | None) -> None:
-    """Render a Markdown snapshot report for one logged run.
+def show(ctx: click.Context, run_id: str, output_path: str | None, as_markdown: bool) -> None:
+    """Show a detailed report for one logged run (tables by default, Markdown with --output).
 
     Pass `latest` (the default) for the most recently logged run, `best`
     for the lowest-J run so far, or an explicit run ID such as `run_0003`.
@@ -99,11 +139,20 @@ def show(ctx: click.Context, run_id: str, output_path: str | None) -> None:
     if matching_prt_files:
         prt_report = prt.parse(matching_prt_files[0])
 
+    target_j = project_config.objective.target_j
     if output_path:
-        written = reporting.write_run_report(record, output_path, prt_report=prt_report)
+        written = reporting.write_run_report(
+            record, output_path, prt_report=prt_report, records=records, target_j=target_j
+        )
         click.echo(f"Wrote {written}")
+    elif as_markdown:
+        click.echo(
+            reporting.render_run_report(
+                record, prt_report=prt_report, records=records, target_j=target_j
+            )
+        )
     else:
-        click.echo(reporting.render_run_report(record, prt_report=prt_report))
+        display.print_run_report(record, records=records, prt_report=prt_report, target_j=target_j)
 
 
 def resolve_run_id(records: list[ledger.RunRecord], run_id: str) -> ledger.RunRecord:

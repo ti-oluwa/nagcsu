@@ -6,7 +6,7 @@ import click
 
 from nagcsu import constants, ledger, parameters, pipeline
 from nagcsu.algorithms import sensitivity
-from nagcsu.cli import context
+from nagcsu.cli import context, display
 
 
 @click.group(name="sensitivity")
@@ -45,6 +45,18 @@ def sensitivity_() -> None:
         "for one that actually helps pressure or water cut."
     ),
 )
+@click.option(
+    "--group-rank",
+    "group_rank_method",
+    type=click.Choice(sensitivity.GROUP_RANK_METHODS),
+    default="mean_rank",
+    show_default=True,
+    help=(
+        "How groups are ordered. mean_rank: average of each member's swing rank, "
+        "ascending (fair between groups of different sizes). rank_sum: total of member "
+        "ranks, ascending (favors small groups). swing_share: total swing in J, descending."
+    ),
+)
 @click.pass_context
 def run(
     ctx: click.Context,
@@ -52,6 +64,7 @@ def run(
     perturbation_fraction: float,
     top_n: int | None,
     detailed: bool,
+    group_rank_method: str,
 ) -> None:
     """Perturb each parameter up and down and rank them by how much J moved.
 
@@ -75,13 +88,14 @@ def run(
         else list(parameters.PARAMETERS.values())
     )
     parameter_bounds = {spec.name: spec.bounds for spec in specs}
+    parameter_groups = {spec.name: spec.group for spec in specs}
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     def on_outcome(outcome: pipeline.RunOutcome) -> None:
         record = pipeline.build_run_record(
             outcome,
-            group=group_name,
+            group=None,
             strategy="sensitivity",
             note="sensitivity probe",
         )
@@ -99,9 +113,21 @@ def run(
             parameter_bounds,
             evaluate,
             perturbation_fraction=perturbation_fraction,
+            parameter_groups=parameter_groups,
         )
-        echo_detailed_results(results[:top_n] if top_n else results)
-        echo_group_recommendation(results[:top_n] if top_n else results)
+        swings = {result.parameter: result.swing for result in results}
+        ranks = sensitivity.rank_parameters(swings)
+        ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
+        shown_detailed = results[:top_n] if top_n else results
+        if results:
+            display.console.print(f"Base J = {results[0].base_j:.4f}")
+        display.console.print(
+            display.detailed_sensitivity_table(shown_detailed, parameter_groups, ranks)
+        )
+        display.console.print(
+            display.group_sensitivity_table(ranked_groups, method=group_rank_method)
+        )
+        echo_group_recommendation(shown_detailed, ranked_groups=ranked_groups)
         return
 
     evaluate = pipeline.make_evaluate(
@@ -115,16 +141,17 @@ def run(
         parameter_bounds,
         evaluate,
         perturbation_fraction=perturbation_fraction,
+        parameter_groups=parameter_groups,
     )
 
     shown = results[:top_n] if top_n else results
-    click.echo(f"Base J = {results[0].base_j:.4f}\n" if results else "No parameters to test.\n")
-    click.echo(f"{'Parameter':<40}{'J at low':>12}{'J at high':>12}{'Swing':>12}")
-    for result in shown:
-        click.echo(
-            f"{result.parameter:<40}{result.j_at_low:>12.4f}{result.j_at_high:>12.4f}{result.swing:>12.4f}"
-        )
-    echo_group_recommendation(shown)
+    click.echo(f"Base J = {results[0].base_j:.4f}" if results else "No parameters to test.")
+    swings = {result.parameter: result.swing for result in results}
+    ranks = sensitivity.rank_parameters(swings)
+    ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
+    display.console.print(display.sensitivity_table(shown, parameter_groups, ranks))
+    display.console.print(display.group_sensitivity_table(ranked_groups, method=group_rank_method))
+    echo_group_recommendation(shown, ranked_groups=ranked_groups)
 
 
 def recommend_groups(parameter_names: list[str], *, limit: int = 3) -> list[str]:
@@ -148,13 +175,26 @@ def recommend_groups(parameter_names: list[str], *, limit: int = 3) -> list[str]
     return seen
 
 
-def echo_group_recommendation(results: typing.Sequence[typing.Any]) -> None:
-    """Print a `match auto --groups=...` suggestion built from `results`."""
+def echo_group_recommendation(
+    results: typing.Sequence[typing.Any],
+    *,
+    ranked_groups: typing.Sequence[sensitivity.GroupSensitivity] | None = None,
+) -> None:
+    """Print a `match auto --groups=...` suggestion.
+
+    Built from the group ranking when `ranked_groups` is given, otherwise
+    from the groups of the top `results`.
+    """
     if not results:
         return
-    groups = recommend_groups([result.parameter for result in results])
+    groups = (
+        [group.group for group in ranked_groups[:3]]
+        if ranked_groups
+        else recommend_groups([result.parameter for result in results])
+    )
     click.echo(f"\nMost sensitive groups: {','.join(groups)}")
     click.echo(f"Try:  nagcsu match auto --groups {','.join(groups)}")
+    click.echo("Or:   nagcsu match auto --order sensitivity   (screens, then tunes in this order)")
 
 
 def echo_detailed_results(results: list[sensitivity.DetailedSensitivityResult]) -> None:
@@ -162,16 +202,9 @@ def echo_detailed_results(results: list[sensitivity.DetailedSensitivityResult]) 
     if not results:
         click.echo("No parameters to test.\n")
         return
-
-    vector_names = sorted({name for result in results for name in result.vector_swings})
+    groups = {
+        result.parameter: parameters.PARAMETERS[result.parameter].group for result in results
+    }
+    ranks = sensitivity.rank_parameters({result.parameter: result.swing for result in results})
     click.echo(f"Base J = {results[0].base_j:.4f}\n")
-    header = f"{'Parameter':<40}{'Swing (J)':>12}"
-    for vector_name in vector_names:
-        header += f"{vector_name:>14}"
-    click.echo(header)
-
-    for result in results:
-        row = f"{result.parameter:<40}{result.swing:>12.4f}"
-        for vector_name in vector_names:
-            row += f"{result.vector_swings.get(vector_name, 0.0):>14.4f}"
-        click.echo(row)
+    display.console.print(display.detailed_sensitivity_table(results, groups, ranks))
