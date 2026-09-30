@@ -28,7 +28,7 @@ def make_detailed_evaluate():
 
 
 def test_run_detailed_ranks_by_combined_swing_by_default() -> None:
-    results = sensitivity.run_detailed(
+    results = sensitivity.detailed_run(
         {"alpha": 0.0, "beta": 0.0},
         {"alpha": (-1.0, 1.0), "beta": (-1.0, 1.0)},
         make_detailed_evaluate(),
@@ -39,7 +39,7 @@ def test_run_detailed_ranks_by_combined_swing_by_default() -> None:
 
 
 def test_run_detailed_vector_swings_show_beta_only_moves_gor() -> None:
-    results = sensitivity.run_detailed(
+    results = sensitivity.detailed_run(
         {"alpha": 0.0, "beta": 0.0},
         {"alpha": (-1.0, 1.0), "beta": (-1.0, 1.0)},
         make_detailed_evaluate(),
@@ -57,7 +57,7 @@ def test_run_detailed_vector_swings_show_beta_only_moves_gor() -> None:
 
 
 def test_run_detailed_base_j_is_the_same_across_every_result() -> None:
-    results = sensitivity.run_detailed(
+    results = sensitivity.detailed_run(
         {"alpha": 0.25, "beta": 0.0},
         {"alpha": (-1.0, 1.0), "beta": (-1.0, 1.0)},
         make_detailed_evaluate(),

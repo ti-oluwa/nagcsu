@@ -137,6 +137,7 @@ def execute(
             weights=config.objective.weights,
             date_column=history.OUTPUT_DATE_COLUMN,
             nrmse_ceiling=config.objective.nrmse_ceiling,
+            wells=config.objective.wells,
         )
 
     return RunOutcome(
@@ -220,7 +221,7 @@ def make_evaluate_with_breakdown(
     Use this instead of `make_evaluate` wherever a caller needs to
     distinguish which scored vector a parameter change actually moved,
     rather than only how it moved the combined `J`;
-    `nagcsu.algorithms.sensitivity.run_detailed` is the current caller.
+    `nagcsu.algorithms.sensitivity.detailed_run` is the current caller.
     See `make_evaluate` for the run-ID and ledger-logging behavior,
     which this mirrors exactly.
     """
@@ -301,5 +302,15 @@ def build_run_record(
         stage=resolved_stage,
         objective_weights=(
             dict(outcome.objective_result.weights) if outcome.objective_result else None
+        ),
+        well_nrmse=(
+            {name: score.nrmse for name, score in outcome.objective_result.well_scores.items()}
+            if outcome.objective_result and outcome.objective_result.well_scores
+            else None
+        ),
+        scored_wells=(
+            list(outcome.objective_result.scored_wells)
+            if outcome.objective_result and outcome.objective_result.scored_wells
+            else None
         ),
     )

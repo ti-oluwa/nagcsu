@@ -53,7 +53,37 @@ class ObjectiveRow:
     """`contribution / sum of contributions`."""
 
 
-def state_rows(state: dict[str, float]) -> list[StateRow]:
+@dataclasses.dataclass(frozen=True, slots=True)
+class WellRow:
+    """One well's water-cut and GOR mismatch."""
+
+    well: str
+    watercut_nrmse: float | None
+    gor_nrmse: float | None
+    in_objective: bool
+    """Whether this well fed J through `wells_watercut` / `wells_gor`."""
+
+
+def get_well_rows(record: ledger.RunRecord) -> list[WellRow]:
+    """Per-well NRMSE rows for a record, worst water-cut mismatch first."""
+    if not record.well_nrmse:
+        return []
+    names = sorted({key.split(":", 1)[1] for key in record.well_nrmse})
+    selected = set(record.scored_wells or [])
+    rows = [
+        WellRow(
+            well=name,
+            watercut_nrmse=record.well_nrmse.get(f"WWCT:{name}"),
+            gor_nrmse=record.well_nrmse.get(f"WGOR:{name}"),
+            in_objective=name in selected,
+        )
+        for name in names
+    ]
+    rows.sort(key=lambda row: -(row.watercut_nrmse or 0.0))
+    return rows
+
+
+def get_state_rows(state: dict[str, float]) -> list[StateRow]:
     """Describe every registered parameter in `state`, changed ones first."""
     rows: list[StateRow] = []
     for spec in parameters.PARAMETERS.values():
@@ -85,7 +115,7 @@ def state_rows(state: dict[str, float]) -> list[StateRow]:
     return rows
 
 
-def objective_rows(record: ledger.RunRecord) -> list[ObjectiveRow]:
+def get_objective_rows(record: ledger.RunRecord) -> list[ObjectiveRow]:
     """Break a scored record's J into per-vector NRMSE, weight and share."""
     if not record.vector_nrmse:
         return []
@@ -145,7 +175,7 @@ def next_steps(
         steps.append(f"Never touched so far: {', '.join(untouched)}.")
 
     histories = [h for h in ledger.summarize_parameters(records) if h.j_span is not None]
-    pinned_bounds = _parameters_pinned_at_bound(best)
+    pinned_bounds = get_parameters_pinned_at_bound(best)
     for name, side in pinned_bounds:
         steps.append(
             f"`{name}` in the best run sits at its {side} bound: widen its range with "
@@ -171,10 +201,10 @@ def next_steps(
     return steps[:limit]
 
 
-def _parameters_pinned_at_bound(record: ledger.RunRecord | None) -> list[tuple[str, str]]:
+def get_parameters_pinned_at_bound(record: ledger.RunRecord | None) -> list[tuple[str, str]]:
     if record is None:
         return []
-    return [(row.name, row.pinned) for row in state_rows(record.parameter_state) if row.pinned]
+    return [(row.name, row.pinned) for row in get_state_rows(record.parameter_state) if row.pinned]
 
 
 def render_run_report(
@@ -186,6 +216,7 @@ def render_run_report(
     group_sensitivities: list[GroupSensitivity] | None = None,
     records: list[ledger.RunRecord] | None = None,
     target_j: float | None = None,
+    show_wells: bool = True,
 ) -> str:
     """Render a single run's snapshot as a Markdown document.
 
@@ -201,6 +232,7 @@ def render_run_report(
         improvement-over-baseline line, per-parameter history and
         data-driven next steps.
     :param target_j: Objective target, used in the next-steps advice.
+    :param show_wells: Include the per-well NRMSE section when the record has one.
     """
     lines: list[str] = []
     lines.append(f"# History match snapshot: {record.run_id}")
@@ -252,12 +284,28 @@ def render_run_report(
             lines.append("")
             lines.append("| Vector | NRMSE | Weight | Weighted | Share of J |")
             lines.append("| --- | --- | --- | --- | --- |")
-            for row in objective_rows(record):
+            for row in get_objective_rows(record):
                 lines.append(
                     f"| {row.name} | {row.nrmse:.4f} | {_fmt(row.weight)} | "
                     f"{_fmt(row.contribution)} | "
                     f"{'-' if row.share is None else f'{row.share * 100:.1f}%'} |"
                 )
+
+    wells = get_well_rows(record) if show_wells else []
+    if wells:
+        lines.append("")
+        lines.append("## Per-well match")
+        lines.append("")
+        scored = ", ".join(record.scored_wells or []) or "none (field totals only)"
+        lines.append(f"Wells counted in J: {scored}. Other wells are shown as diagnostics.")
+        lines.append("")
+        lines.append("| Well | Water cut NRMSE | GOR NRMSE | In J |")
+        lines.append("| --- | --- | --- | --- |")
+        for row in wells:
+            lines.append(
+                f"| {row.well} | {_fmt(row.watercut_nrmse)} | {_fmt(row.gor_nrmse)} | "
+                f"{'yes' if row.in_objective else 'no'} |"
+            )
 
     if group_outcomes:
         lines.append("")
@@ -300,7 +348,7 @@ def render_run_report(
     lines.append("")
     lines.append("| Parameter | Group | Value | Default | Change | Bounds | Note |")
     lines.append("| --- | --- | --- | --- | --- | --- | --- |")
-    for row in state_rows(record.parameter_state):
+    for row in get_state_rows(record.parameter_state):
         change = (
             "-" if row.change_percent is None or not row.changed else f"{row.change_percent:+.1f}%"
         )

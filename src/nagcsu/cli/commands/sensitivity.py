@@ -57,6 +57,8 @@ def sensitivity_() -> None:
         "ranks, ascending (favors small groups). swing_share: total swing in J, descending."
     ),
 )
+@context.wells_option
+@context.weights_option
 @click.pass_context
 def run(
     ctx: click.Context,
@@ -65,6 +67,8 @@ def run(
     top_n: int | None,
     detailed: bool,
     group_rank_method: str,
+    wells_raw: str | None,
+    weights_raw: str | None,
 ) -> None:
     """Perturb each parameter up and down and rank them by how much J moved.
 
@@ -82,6 +86,9 @@ def run(
         )
 
     project_config, base_deck = context.load(ctx)
+    project_config = context.apply_objective_overrides(
+        project_config, wells_raw=wells_raw, weights_raw=weights_raw
+    )
     specs = (
         parameters.get_parameters_in_group(group_name)
         if group_name
@@ -108,7 +115,7 @@ def run(
             run_id_prefix="sensitivity",
             on_outcome=on_outcome,
         )
-        results = sensitivity.run_detailed(
+        results = sensitivity.detailed_run(
             parameters.default_state(),
             parameter_bounds,
             evaluate,
@@ -118,16 +125,17 @@ def run(
         swings = {result.parameter: result.swing for result in results}
         ranks = sensitivity.rank_parameters(swings)
         ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
-        shown_detailed = results[:top_n] if top_n else results
+        shown_results = results[:top_n] if top_n else results
         if results:
             display.console.print(f"Base J = {results[0].base_j:.4f}")
+
         display.console.print(
-            display.detailed_sensitivity_table(shown_detailed, parameter_groups, ranks)
+            display.detailed_sensitivity_table(shown_results, parameter_groups, ranks)
         )
         display.console.print(
             display.group_sensitivity_table(ranked_groups, method=group_rank_method)
         )
-        echo_group_recommendation(shown_detailed, ranked_groups=ranked_groups)
+        echo_group_recommendation(shown_results, ranked_groups=ranked_groups)
         return
 
     evaluate = pipeline.make_evaluate(
@@ -144,21 +152,21 @@ def run(
         parameter_groups=parameter_groups,
     )
 
-    shown = results[:top_n] if top_n else results
+    shown_results = results[:top_n] if top_n else results
     click.echo(f"Base J = {results[0].base_j:.4f}" if results else "No parameters to test.")
     swings = {result.parameter: result.swing for result in results}
     ranks = sensitivity.rank_parameters(swings)
     ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
-    display.console.print(display.sensitivity_table(shown, parameter_groups, ranks))
+    display.console.print(display.sensitivity_table(shown_results, parameter_groups, ranks))
     display.console.print(display.group_sensitivity_table(ranked_groups, method=group_rank_method))
-    echo_group_recommendation(shown, ranked_groups=ranked_groups)
+    echo_group_recommendation(shown_results, ranked_groups=ranked_groups)
 
 
 def recommend_groups(parameter_names: list[str], *, limit: int = 3) -> list[str]:
     """Map ranked parameter names back to their tuning groups.
 
     :param parameter_names: Parameter names, most sensitive first (the
-        order `sensitivity.run`/`run_detailed` already return).
+        order `sensitivity.run`/`detailed_run` already return).
     :param limit: Most distinct groups to return.
     :returns: Group names in the order their first (most sensitive)
         parameter appeared, deduplicated, for example `["aquifer",
@@ -187,6 +195,7 @@ def echo_group_recommendation(
     """
     if not results:
         return
+
     groups = (
         [group.group for group in ranked_groups[:3]]
         if ranked_groups
@@ -198,10 +207,11 @@ def echo_group_recommendation(
 
 
 def echo_detailed_results(results: list[sensitivity.DetailedSensitivityResult]) -> None:
-    """Print a `run_detailed` ranking, one column per scored vector plus combined J."""
+    """Print a `detailed_run` ranking, one column per scored vector plus combined J."""
     if not results:
         click.echo("No parameters to test.\n")
         return
+
     groups = {
         result.parameter: parameters.PARAMETERS[result.parameter].group for result in results
     }

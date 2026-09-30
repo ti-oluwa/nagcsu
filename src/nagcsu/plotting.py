@@ -14,6 +14,7 @@ self-contained HTML file (or a static image, if `kaleido` is installed):
 """
 
 import pathlib
+import typing
 
 import pandas
 import plotly.graph_objects as go
@@ -166,6 +167,70 @@ def plot_match(
 
     figure.update_xaxes(title_text="Date", row=len(vector_names), col=1)
     figure.update_layout(title=title, height=280 * len(vector_names))
+    return figure
+
+
+def plot_wells_match(
+    simulated: pandas.DataFrame,
+    observed: pandas.DataFrame,
+    wells: typing.Sequence[str],
+    *,
+    title: str = "Per-well simulated vs observed",
+    date_column: str = "DATE",
+) -> go.Figure:
+    """Plot each well's simulated and observed water cut and GOR.
+
+    One row per well, water cut on the left and GOR on the right. A well
+    with no history or no simulated column for a vector leaves that panel
+    empty rather than failing, so a partly covered history still plots.
+
+    :param simulated: A `nagcsu.summary.load_summary` frame loaded with `wells`.
+    :param observed: A `nagcsu.pipeline.load_observed_history` frame.
+    :param wells: Deck well names to plot, in order.
+    :raises ValueError: if `wells` is empty.
+    """
+    if not wells:
+        raise ValueError("No wells to plot.")
+    titles = [
+        text
+        for well in wells
+        for text in (f"{well}: water cut (fraction)", f"{well}: GOR (Mscf/STB)")
+    ]
+    figure = make_subplots(
+        rows=len(wells), cols=2, shared_xaxes=True, subplot_titles=titles, vertical_spacing=0.04
+    )
+    for row, well in enumerate(wells, start=1):
+        for col, prefix in enumerate(("WWCT", "WGOR"), start=1):
+            column = f"{prefix}:{well}"
+            if column in simulated.columns:
+                figure.add_trace(
+                    go.Scatter(
+                        x=simulated[date_column],
+                        y=simulated[column],
+                        mode="lines",
+                        name="Simulated",
+                        legendgroup="simulated",
+                        showlegend=(row == 1 and col == 1),
+                        line={"color": "#1f77b4"},
+                    ),
+                    row=row,
+                    col=col,
+                )
+            if column in observed.columns:
+                figure.add_trace(
+                    go.Scatter(
+                        x=observed[date_column],
+                        y=observed[column],
+                        mode="markers",
+                        name="Observed",
+                        legendgroup="observed",
+                        showlegend=(row == 1 and col == 1),
+                        marker={"color": "#d62728", "size": 4},
+                    ),
+                    row=row,
+                    col=col,
+                )
+    figure.update_layout(title=title, height=230 * len(wells))
     return figure
 
 

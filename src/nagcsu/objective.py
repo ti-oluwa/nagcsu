@@ -7,6 +7,7 @@ something OPM Flow predicts; a "perfect" rate match proves nothing.
 """
 
 import dataclasses
+import typing
 
 import numpy as np
 import numpy.typing as npt
@@ -40,6 +41,16 @@ class VectorScore:
     """Number of aligned (date-matched) points the score was computed over."""
 
 
+WELL_AGGREGATE_VECTORS: dict[str, str] = {
+    "wells_watercut": "WWCT",
+    "wells_gor": "WGOR",
+}
+"""Weight names for per-well scoring, and the summary vector each one
+averages over the selected wells. `wells_watercut` is the mean of the
+selected wells' water-cut NRMSE, so adding wells does not inflate its
+influence on J: one weight covers the whole set."""
+
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class ObjectiveResult:
     """Combined mismatch score J and its per-vector components."""
@@ -52,6 +63,15 @@ class ObjectiveResult:
 
     weights: dict[str, float]
     """Weights actually used for this result, echoed back for the run record."""
+
+    well_scores: dict[str, VectorScore] = dataclasses.field(default_factory=dict)
+    """Per-well NRMSE keyed like `WWCT:AFIESERE`, for every well whose
+    column exists in both frames, whether or not that well is part of `J`.
+    Diagnostic for reports and plots; only wells in `wells` feed `J`.
+    """
+
+    scored_wells: tuple[str, ...] = ()
+    """Wells that fed the `wells_watercut` and `wells_gor` terms of `J`."""
 
 
 def compute_nrmse(
@@ -79,6 +99,7 @@ def score(
     weights: dict[str, float],
     date_column: str = "DATE",
     nrmse_ceiling: float | None = None,
+    wells: typing.Sequence[str] = (),
 ) -> ObjectiveResult:
     """Compute the combined objective `J` between a simulated and observed frame.
 
@@ -102,9 +123,14 @@ def score(
         raw value either way, so `nagcsu sanity check-init` and manual
         inspection still see the true, unclipped mismatch even when a
         ceiling is set for the search itself.
+    :param wells: Wells whose water cut and GOR feed the
+        `wells_watercut` and `wells_gor` weights. Empty means field
+        totals only. Per-well NRMSE is also computed, as a diagnostic
+        in `ObjectiveResult.well_scores`, for every other well whose
+        columns are present in both frames.
     :raises nagcsu.exceptions.HistoryAlignmentError: if the two frames
-        share no common dates, or if a required column is missing from
-        either frame.
+        share no common dates, if a required column is missing from
+        either frame, or if a selected well has no usable data.
     """
 
     def matching_columns(frame: pandas.DataFrame, name: str) -> list[str]:
@@ -150,4 +176,56 @@ def score(
         clamped_nrmse = min(raw_nrmse, nrmse_ceiling) if nrmse_ceiling is not None else raw_nrmse
         weighted_total += weights.get(name, 0.0) * clamped_nrmse
 
-    return ObjectiveResult(j=weighted_total, vector_scores=vector_scores, weights=dict(weights))
+    well_scores: dict[str, VectorScore] = {}
+    for column in simulated.columns:
+        if not isinstance(column, str) or not column.startswith(("WWCT:", "WGOR:")):
+            continue
+        if f"{column}_sim" not in merged.columns or f"{column}_obs" not in merged.columns:
+            continue
+        pair = merged[[f"{column}_sim", f"{column}_obs"]].dropna()
+        if pair.empty:
+            continue
+        well_scores[column] = VectorScore(
+            name=column,
+            nrmse=compute_nrmse(pair[f"{column}_sim"], pair[f"{column}_obs"]),
+            point_count=len(pair),
+        )
+
+    selected = tuple(dict.fromkeys(well.strip().upper() for well in wells))
+    aggregate_weight_used = any(weights.get(name, 0.0) > 0 for name in WELL_AGGREGATE_VECTORS)
+    if aggregate_weight_used and not selected:
+        raise HistoryAlignmentError(
+            "Weights for per-well vectors (wells_watercut / wells_gor) are set but no wells "
+            "are selected; set `objective.wells` in the config or pass --wells."
+        )
+    if selected:
+        for aggregate_name, prefix in WELL_AGGREGATE_VECTORS.items():
+            missing = [well for well in selected if f"{prefix}:{well}" not in well_scores]
+            if weights.get(aggregate_name, 0.0) > 0 and missing:
+                raise HistoryAlignmentError(
+                    f"No usable {prefix} history or simulation for well(s) {missing}. Check the "
+                    f"well names against the deck's WELSPECS and the history file's well column."
+                )
+            members = [
+                well_scores[f"{prefix}:{well}"]
+                for well in selected
+                if f"{prefix}:{well}" in well_scores
+            ]
+            if not members:
+                continue
+            mean_nrmse = float(np.mean([member.nrmse for member in members]))
+            vector_scores[aggregate_name] = VectorScore(
+                name=aggregate_name,
+                nrmse=mean_nrmse,
+                point_count=int(sum(member.point_count for member in members)),
+            )
+            clamped = min(mean_nrmse, nrmse_ceiling) if nrmse_ceiling is not None else mean_nrmse
+            weighted_total += weights.get(aggregate_name, 0.0) * clamped
+
+    return ObjectiveResult(
+        j=weighted_total,
+        vector_scores=vector_scores,
+        weights=dict(weights),
+        well_scores=well_scores,
+        scored_wells=selected,
+    )

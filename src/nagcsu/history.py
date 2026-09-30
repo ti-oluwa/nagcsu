@@ -65,7 +65,36 @@ silently finds nothing in common between the two frames.
 """
 
 
-def detect_file_format(path: pathlib.Path, file_format: str | None = None) -> str:
+def normalize_well_name(name: str) -> str:
+    """Upper-case `name` and drop everything but letters and digits."""
+    return re.sub(r"[^A-Z0-9]", "", str(name).upper())
+
+
+def match_well_name(observed_name: str, simulated_wells: typing.Sequence[str]) -> str | None:
+    """Find the deck well an observed sub-field name refers to.
+
+    The history file and the deck spell names differently ("Olomoro-Oleh"
+    against `OLOMORO`), so names are compared after dropping case and
+    punctuation, accepting an exact match or one being a prefix of the
+    other.
+
+    :returns: The matching name from `simulated_wells`, or `None`.
+    """
+    key = normalize_well_name(observed_name)
+    for well in simulated_wells:
+        candidate = normalize_well_name(well)
+        if (
+            key
+            and candidate
+            and (key == candidate or key.startswith(candidate) or candidate.startswith(key))
+        ):
+            return well
+    return None
+
+
+def detect_file_format(
+    path: pathlib.Path, file_format: str | None = None
+) -> typing.Literal["csv", "excel"]:
     """Return `"csv"` or `"excel"` for `path`.
 
     :param file_format: Explicit override (`"csv"` or `"excel"`); used
@@ -87,7 +116,7 @@ def detect_file_format(path: pathlib.Path, file_format: str | None = None) -> st
         return "excel"
     raise ValueError(
         f"Could not tell whether {path} is CSV or Excel from its extension {suffix!r}. "
-        f"Set history.file_format to 'csv' or 'excel' in nagcsu.yaml to be explicit."
+        f"Set `history.file_format` to 'csv' or 'excel' in nagcsu.yaml to be explicit."
     )
 
 
@@ -265,7 +294,11 @@ def load_observed_history(
 
     if long_format is not None:
         return load_long_format(
-            raw, date_column=source_date_column, mapping=long_format, path=path
+            raw,
+            date_column=source_date_column,
+            mapping=long_format,
+            path=path,
+            wells=wells or [],
         )
     return load_wide_format(
         raw, date_column=source_date_column, column_map=column_map, wells=wells or [], path=path
@@ -273,7 +306,12 @@ def load_observed_history(
 
 
 def load_long_format(
-    raw: pandas.DataFrame, *, date_column: str, mapping: dict[str, str], path: pathlib.Path
+    raw: pandas.DataFrame,
+    *,
+    date_column: str,
+    mapping: dict[str, str],
+    path: pathlib.Path,
+    wells: list[str] | None = None,
 ) -> pandas.DataFrame:
     """Aggregate a one-row-per-well-per-date table into field totals.
 
@@ -286,6 +324,13 @@ def load_long_format(
     columns were not found; a fallback `water_cut` column that looks
     like it is in percent (values above 1.5) is divided by 100, since
     OPM's FWCT is a 0-1 fraction.
+
+    When `wells` is given, each sub-field in the file whose name matches
+    one of them (see `match_well_name`) also gets `WWCT:<WELL>` and
+    `WGOR:<WELL>` columns, so per-well scoring and plots can use the same
+    frame. Months where a well was not producing are left empty (NaN)
+    rather than zero, so a not-yet-started well is not scored as a
+    perfect zero-water-cut match.
     """
     frame = raw.copy()
     frame[date_column] = pandas.to_datetime(frame[date_column]).dt.normalize()
@@ -336,6 +381,34 @@ def load_long_format(
         raise KeyError(
             f"No oil/gas rate columns or a GOR column found in {path}; cannot compute field GOR."
         )
+
+    if wells and "well" in mapping:
+        for observed_name, sub in frame.groupby(mapping["well"]):
+            deck_well = match_well_name(str(observed_name), wells)
+            if deck_well is None:
+                continue
+            sub = sub.drop_duplicates(subset=date_column).set_index(date_column)
+            if "oil_rate" in mapping and "water_rate" in mapping:
+                liquid = sub[mapping["oil_rate"]] + sub[mapping["water_rate"]]
+                well_wct = sub[mapping["water_rate"]] / liquid.where(liquid > 0)
+            elif "water_cut" in mapping:
+                well_wct = sub[mapping["water_cut"]].astype(float)
+                if well_wct.max() > 1.5:
+                    well_wct = well_wct / 100.0
+            else:
+                well_wct = None
+            if "gas_rate" in mapping and "oil_rate" in mapping:
+                well_gor = sub[mapping["gas_rate"]] / sub[mapping["oil_rate"]].where(
+                    sub[mapping["oil_rate"]] > 0
+                )
+            elif "gor" in mapping:
+                well_gor = sub[mapping["gor"]].astype(float)
+            else:
+                well_gor = None
+            if well_wct is not None:
+                result[f"WWCT:{deck_well}"] = result[date_column].map(well_wct)
+            if well_gor is not None:
+                result[f"WGOR:{deck_well}"] = result[date_column].map(well_gor)
 
     return result.rename(columns={date_column: OUTPUT_DATE_COLUMN})
 

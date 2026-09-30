@@ -27,6 +27,8 @@ DEFAULT_OBJECTIVE_WEIGHTS: typing.Final[dict[str, float]] = {
     "pressure": 0.50,
     "watercut": 0.35,
     "gor": 0.15,
+    # "wells_gor": 0.03,
+    # "wells_water_cut": 0.07,
 }
 """Starting NRMSE weights for the combined objective J. Pressure is
 weighted highest because it is the most direct read on volumetric

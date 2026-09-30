@@ -79,6 +79,17 @@ class RunRecord:
     "baseline", "descent/pass2", "sensitivity/high" or "final".
     """
 
+    well_nrmse: dict[str, float] | None = None
+    """Per-well NRMSE keyed like `WWCT:AFIESERE`, for every well the
+    history covers, whether or not it fed J. `None` when the run had no
+    per-well data.
+    """
+
+    scored_wells: list[str] | None = None
+    """Wells that fed J through `wells_watercut` / `wells_gor`; `None`
+    when J was field totals only.
+    """
+
     objective_weights: dict[str, float] | None = None
     """Vector weights `j` was computed with, so a report can show what
     each vector contributed even after `nagcsu.yaml` or a `--weights`
@@ -107,7 +118,7 @@ def append(ledger_path: pathlib.Path | str, record: RunRecord) -> None:
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": LEDGER_SCHEMA_VERSION,
-        "runs": [dataclasses.asdict(saved_record) for saved_record in records],
+        "runs": [dataclasses.asdict(record) for record in records],
     }
     ledger_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 

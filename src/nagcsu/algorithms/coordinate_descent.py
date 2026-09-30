@@ -8,19 +8,19 @@ import scipy.optimize
 from nagcsu.algorithms.base import EvaluateFunction, SearchResult, Trial, best_of, tag_trials
 
 DEFAULT_XATOL_FRACTION = 0.02
-"""Default `xatol_fraction` for `search`: locate each parameter to within
+"""Default `xatol_fraction` for `search`. Locate each parameter to within
 2 percent of its bound range."""
 
 DEFAULT_MAX_EVALUATIONS_PER_PARAMETER = 12
 """Default `max_evaluations_per_parameter` for `search`."""
 
 DEFAULT_MIN_RELATIVE_IMPROVEMENT = 0.005
-"""Default `min_relative_improvement` for `search`: a pass that improves J
+"""Default `min_relative_improvement` for `search`. A pass that improves J
 by less than half a percent counts as no progress."""
 
 
 DEFAULT_WINDOW_SHRINK = 0.5
-"""Default `window_shrink` for `search`: each pass after the first
+"""Default `window_shrink` for `search`. Each pass after the first
 searches a window half as wide as the previous pass's, centered on the
 best value found so far."""
 
@@ -148,6 +148,7 @@ def search(
     current_best_state = dict(base_state)
     with tag_trials(stage=f"{stage_prefix}baseline"):
         current_best_j = evaluate(current_best_state)
+
     trials.append(Trial(state=dict(current_best_state), j=current_best_j))
 
     outcomes: list[GroupOutcome] = []
@@ -166,6 +167,7 @@ def search(
         for pass_number in range(1, passes_per_group + 1):
             if current_best_j <= target_j:
                 break
+
             passes_run += 1
             j_before_pass = current_best_j
             for parameter, (bound_low, bound_high) in group_bounds.items():
@@ -178,6 +180,7 @@ def search(
                     center = current_best_state[parameter]
                     low = max(bound_low, center - half_width)
                     high = min(bound_high, center + half_width)
+
                 if high <= low:
                     continue
 
@@ -200,6 +203,7 @@ def search(
                         stage=f"{stage_prefix}descent/pass{pass_number}",
                     ):
                         j = evaluate(candidate_state)
+                    
                     evaluations += 1
                     trials.append(Trial(state=dict(candidate_state), j=j))
                     return j

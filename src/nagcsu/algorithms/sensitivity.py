@@ -154,7 +154,7 @@ class DetailedSensitivityResult:
     """
 
 
-def run_detailed(
+def detailed_run(
     base_state: dict[str, float],
     parameter_bounds: dict[str, tuple[float, float]],
     evaluate: DetailedEvaluateFunction,

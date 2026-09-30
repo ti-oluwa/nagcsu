@@ -11,7 +11,7 @@ def sanity() -> None:
     """Checks a clean `.PRT` file does not by itself cover."""
 
 
-@sanity.command(name="check-init")
+@sanity.command(name="check")
 @click.option(
     "--run-id", default=None, help="Run to check. Defaults to the most recently logged run."
 )
@@ -22,7 +22,7 @@ def sanity() -> None:
     help="How far above Swc the mean initial water saturation may sit before this fails.",
 )
 @click.pass_context
-def check_init(ctx: click.Context, run_id: str | None, tolerance: float) -> None:
+def check(ctx: click.Context, run_id: str | None, tolerance: float) -> None:
     """Compare a run's pre-production water saturation against the deck's own Swc.
 
     Catches an EQUIL contact-depth, PVT/density, or capillary-pressure

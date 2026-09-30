@@ -32,6 +32,13 @@ class ObjectiveConfig:
     target_j: float = constants.DEFAULT_TARGET_J
     """J value at or below which tuning should stop."""
 
+    wells: tuple[str, ...] = ()
+    """Wells whose water cut and GOR feed J through the `wells_watercut`
+    and `wells_gor` weights. Empty (the default) scores field totals only.
+    Per-well NRMSE is still computed for every well as a diagnostic.
+    Override per command with `--wells`.
+    """
+
     nrmse_ceiling: float | None = None
     """If set, each vector's NRMSE is clipped to this value before being
     weighted into J (see `nagcsu.objective.score`). Left unset (`None`),
@@ -56,7 +63,7 @@ class HistoryConfig:
     if the extension does not match the file's real content.
     """
 
-    file_format: str | None = None
+    file_format: typing.Literal["csv", "excel"] | None = None
     """`"csv"` or `"excel"`, overriding the guess `nagcsu.history` makes
     from `path`'s extension. Leave unset to let the extension decide.
     """
@@ -175,6 +182,19 @@ class ProjectConfig:
             )
         if not self.wells:
             raise ValueError("At least one well must be configured to score against")
+        unknown_wells = [well for well in self.objective.wells if well not in self.wells]
+        if unknown_wells:
+            raise ValueError(
+                f"objective.wells {unknown_wells} are not in the configured wells {list(self.wells)}"
+            )
+        well_weight = sum(
+            self.objective.weights.get(name, 0.0) for name in ("wells_watercut", "wells_gor")
+        )
+        if well_weight > 0 and not self.objective.wells:
+            raise ValueError(
+                "Weights for wells_watercut / wells_gor are set but objective.wells is empty; "
+                "list the wells to score or set those weights to 0."
+            )
         if self.threads_per_process is not None and self.threads_per_process < 1:
             raise ValueError(
                 f"`threads_per_process` must be at least 1 (or null), got {self.threads_per_process}"
@@ -205,6 +225,7 @@ def load(config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE) -> Pro
     raw_nrmse_ceiling = objective_dict.get("nrmse_ceiling")
     objective = ObjectiveConfig(
         weights=dict(objective_dict.get("weights", constants.DEFAULT_OBJECTIVE_WEIGHTS)),
+        wells=tuple(str(well).upper() for well in objective_dict.get("wells", [])),
         target_j=float(objective_dict.get("target_j", constants.DEFAULT_TARGET_J)),
         nrmse_ceiling=float(raw_nrmse_ceiling) if raw_nrmse_ceiling is not None else None,
     )
@@ -260,6 +281,7 @@ def save(
         "wells": list(config.wells),
         "objective": {
             "weights": config.objective.weights,
+            "wells": list(config.objective.wells),
             "target_j": config.objective.target_j,
             "nrmse_ceiling": config.objective.nrmse_ceiling,
         },

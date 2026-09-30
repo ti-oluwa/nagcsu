@@ -19,9 +19,17 @@ from nagcsu.cli import context
 )
 @click.option("--no-score", is_flag=True, help="Skip scoring against the observed history.")
 @click.option("--note", default="", help="Free-text note saved to the run ledger.")
+@context.wells_option
+@context.weights_option
 @click.pass_context
 def run(
-    ctx: click.Context, param_pairs: tuple[str, ...], run_id: str | None, no_score: bool, note: str
+    ctx: click.Context,
+    param_pairs: tuple[str, ...],
+    run_id: str | None,
+    no_score: bool,
+    note: str,
+    wells_raw: str | None,
+    weights_raw: str | None,
 ) -> None:
     """Run the deck once and log the result to the run ledger.
 
@@ -30,6 +38,9 @@ def run(
     see `nagcsu match list-parameters` for the full set of names.
     """
     project_config, base_deck = context.load(ctx)
+    project_config = context.apply_objective_overrides(
+        project_config, wells_raw=wells_raw, weights_raw=weights_raw
+    )
     state = context.parse_param_options(param_pairs)
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)

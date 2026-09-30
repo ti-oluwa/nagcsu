@@ -19,12 +19,12 @@ def report() -> None:
 @click.option(
     "--run-id-prefix",
     default=None,
-    help="Only list records whose run_id starts with this prefix.",
+    help="Only list records whose `run_id` starts with this prefix.",
 )
 @click.option(
     "--run-id-regex",
     default=None,
-    help="Only list records whose run_id matches this regex pattern.",
+    help="Only list records whose `run_id` matches this regex pattern.",
 )
 @click.option(
     "--parameter", "parameter_name", default=None, help="Only list runs that moved this parameter."
@@ -53,7 +53,7 @@ def list_(
         click.echo("No runs logged yet. Try `nagcsu run` first.")
         return
 
-    filtered = ledger.filter_records(
+    filtered_records = ledger.filter_records(
         records,
         strategy=strategy,
         group=group_name,
@@ -63,12 +63,12 @@ def list_(
         stage=stage,
         limit=limit,
     )
-    if not filtered:
+    if not filtered_records:
         click.echo("No runs match the selected filters.")
         return
 
-    display.console.print(display.ledger_table(filtered))
-    best = ledger.get_best_record(filtered)
+    display.console.print(display.ledger_table(filtered_records))
+    best = ledger.get_best_record(filtered_records)
     if best:
         click.echo(f"Best in view: {best.run_id} (J={best.j:.4f})")
 
@@ -89,6 +89,7 @@ def parameters_(ctx: click.Context, group_name: str | None) -> None:
     if not records:
         click.echo("No runs logged yet. Try `nagcsu run` first.")
         return
+
     histories = ledger.summarize_parameters(records)
     if group_name:
         histories = [history for history in histories if history.group == group_name]
@@ -96,11 +97,13 @@ def parameters_(ctx: click.Context, group_name: str | None) -> None:
         click.echo("No single-parameter trials logged for the selected filter.")
     else:
         display.console.print(display.parameter_history_table(histories))
+
     group_histories = ledger.summarize_groups(records)
     if group_name:
         group_histories = [history for history in group_histories if history.group == group_name]
     if group_histories:
         display.console.print(display.group_history_table(group_histories))
+
     for step in reporting.next_steps(records):
         click.echo(f"- {step}")
 
@@ -120,8 +123,16 @@ def parameters_(ctx: click.Context, group_name: str | None) -> None:
     default=False,
     help="Print the Markdown report to the terminal instead of rich tables.",
 )
+@click.option(
+    "--per-well/--no-per-well",
+    "per_well",
+    default=True,
+    help="Include the per-well water cut and GOR match table when the run has one.",
+)
 @click.pass_context
-def show(ctx: click.Context, run_id: str, output_path: str | None, as_markdown: bool) -> None:
+def show(
+    ctx: click.Context, run_id: str, output_path: str | None, as_markdown: bool, per_well: bool
+) -> None:
     """Show a detailed report for one logged run (tables by default, Markdown with --output).
 
     Pass `latest` (the default) for the most recently logged run, `best`
@@ -142,17 +153,32 @@ def show(ctx: click.Context, run_id: str, output_path: str | None, as_markdown: 
     target_j = project_config.objective.target_j
     if output_path:
         written = reporting.write_run_report(
-            record, output_path, prt_report=prt_report, records=records, target_j=target_j
+            record,
+            output_path,
+            prt_report=prt_report,
+            records=records,
+            target_j=target_j,
+            show_wells=per_well,
         )
         click.echo(f"Wrote {written}")
     elif as_markdown:
         click.echo(
             reporting.render_run_report(
-                record, prt_report=prt_report, records=records, target_j=target_j
+                record,
+                prt_report=prt_report,
+                records=records,
+                target_j=target_j,
+                show_wells=per_well,
             )
         )
     else:
-        display.print_run_report(record, records=records, prt_report=prt_report, target_j=target_j)
+        display.print_run_report(
+            record,
+            records=records,
+            prt_report=prt_report,
+            target_j=target_j,
+            show_wells=per_well,
+        )
 
 
 def resolve_run_id(records: list[ledger.RunRecord], run_id: str) -> ledger.RunRecord:

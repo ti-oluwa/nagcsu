@@ -117,7 +117,7 @@ def state_table(
         ("Note", "left"),
     ):
         table.add_column(column, justify=justify, overflow="fold")  # type: ignore[arg-type]
-    for row in reporting.state_rows(state):
+    for row in reporting.get_state_rows(state):
         if not show_all and not row.changed:
             continue
         change = (
@@ -153,13 +153,33 @@ def objective_table(record: ledger.RunRecord, *, target_j: float | None = None) 
     table = make_table("Objective breakdown", caption=caption)
     for column in ("Vector", "NRMSE", "Weight", "Weighted", "Share of J"):
         table.add_column(column, justify="left" if column == "Vector" else "right")
-    for row in reporting.objective_rows(record):
+    for row in reporting.get_objective_rows(record):
         table.add_row(
             row.name,
             f"{row.nrmse:.4f}",
             num(row.weight, ".2f"),
             num(row.contribution),
             "-" if row.share is None else f"{row.share * 100:.1f}%",
+        )
+    return table
+
+
+def well_table(record: ledger.RunRecord) -> Table | None:
+    """Per-well water-cut and GOR NRMSE, or `None` if the record has none."""
+    rows = reporting.get_well_rows(record)
+    if not rows:
+        return None
+    scored = ", ".join(record.scored_wells or []) or "none (field totals only)"
+    table = make_table("Per-well match", caption=f"counted in J: {scored}; others are diagnostics")
+    for column in ("Well", "Water cut NRMSE", "GOR NRMSE", "In J"):
+        table.add_column(column, justify="left" if column == "Well" else "right")
+    for row in rows:
+        table.add_row(
+            row.well,
+            num(row.watercut_nrmse),
+            num(row.gor_nrmse),
+            "[green]yes[/green]" if row.in_objective else "[dim]no[/dim]",
+            style=None if row.in_objective else "dim",
         )
     return table
 
@@ -436,6 +456,7 @@ def print_run_report(
     records: list[ledger.RunRecord],
     prt_report: PrtReport | None = None,
     target_j: float | None = None,
+    show_wells: bool = True,
 ) -> None:
     """Terminal version of `reporting.render_run_report`."""
     identity = (
@@ -466,6 +487,10 @@ def print_run_report(
                 f"{abs(drop):.1f}% {'better' if drop >= 0 else 'worse'}."
             )
 
+    if show_wells:
+        wells = well_table(record)
+        if wells is not None:
+            console.print(wells)
     console.print(state_table(record.parameter_state, title="Final parameter state"))
     histories = ledger.summarize_parameters(records)
     if histories:

@@ -23,12 +23,12 @@ def plot() -> None:
 @click.option(
     "--run-id-prefix",
     default=None,
-    help="Only plot records whose run_id starts with this prefix.",
+    help="Only plot records whose `run_id` starts with this prefix.",
 )
 @click.option(
     "--run-id-regex",
     default=None,
-    help="Only plot records whose run_id matches this regex pattern.",
+    help="Only plot records whose `run_id` matches this regex pattern.",
 )
 @click.option(
     "--limit", default=None, type=int, help="Only plot the most recent N matching records."
@@ -67,7 +67,7 @@ def convergence(
     """
     project_config, _ = context.load(ctx)
     records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
-    filtered = ledger.filter_records(
+    filtered_records = ledger.filter_records(
         records,
         strategy=strategy,
         group=group_name,
@@ -75,18 +75,18 @@ def convergence(
         run_id_regex=run_id_regex,
         limit=limit,
     )
-    if not filtered:
+    if not filtered_records:
         raise click.ClickException("No matching ledger records to plot.")
 
     try:
-        figure = plotting.plot_convergence(filtered)
+        figure = plotting.plot_convergence(filtered_records)
     except ValueError as error:
         raise click.ClickException(str(error)) from error
 
     resolved_output_path = output_path or (None if show else pathlib.Path("convergence.html"))
     written = show_and_save_figure(figure, show=show, output_path=resolved_output_path)
     if written is not None:
-        click.echo(f"Plotted {len(filtered)} trial(s) to {written}")
+        click.echo(f"Plotted {len(filtered_records)} trial(s) to {written}")
 
 
 @plot.command(name="match")
@@ -105,8 +105,23 @@ def convergence(
     "<run output dir>/match.html. An .html path is interactive and needs no extra "
     "packages; any other extension (.png, .svg, .pdf) needs `pip install kaleido`.",
 )
+@click.option(
+    "--wells",
+    "wells_raw",
+    default=None,
+    help=(
+        "Also plot per-well water cut and GOR for these wells: 'all' or a comma-separated "
+        "list such as AFIESERE,KOKORI. Written next to the main plot as <name>_wells.html."
+    ),
+)
 @click.pass_context
-def match_(ctx: click.Context, run_id: str, show: bool, output_path: pathlib.Path | None) -> None:
+def match_(
+    ctx: click.Context,
+    run_id: str,
+    show: bool,
+    output_path: pathlib.Path | None,
+    wells_raw: str | None,
+) -> None:
     """Plot one run's simulated pressure, water cut and GOR against observed history.
 
     Pass `latest` (the default) for the most recently logged run,
@@ -117,8 +132,8 @@ def match_(ctx: click.Context, run_id: str, show: bool, output_path: pathlib.Pat
     records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
     if not records:
         raise click.ClickException("No runs logged yet.")
-    record = resolve_run_id(records, run_id)
 
+    record = resolve_run_id(records, run_id)
     output_dir = project_config.get_resolved_path(project_config.output_root) / record.run_id
     case_basename = simulate.find_case_basename(output_dir)
     if case_basename is None:
@@ -135,6 +150,26 @@ def match_(ctx: click.Context, run_id: str, show: bool, output_path: pathlib.Pat
     if written is not None:
         click.echo(f"Plotted {record.run_id} to {written}")
 
+    if wells_raw:
+        chosen = context.resolve_wells(project_config, wells_raw)
+        if not chosen:
+            raise click.BadParameter("--wells needs 'all' or at least one well name.")
+
+        wells_figure = plotting.plot_wells_match(
+            simulated_frame,
+            observed_frame,
+            chosen,
+            title=f"Per-well simulated vs observed: {record.run_id}",
+        )
+        wells_output = (
+            written.with_name(f"{written.stem}_wells{written.suffix}")
+            if written is not None
+            else None
+        )
+        wells_written = show_and_save_figure(wells_figure, show=show, output_path=wells_output)
+        if wells_written is not None:
+            click.echo(f"Plotted {len(chosen)} well(s) to {wells_written}")
+
 
 def show_and_save_figure(
     figure: go.Figure, *, show: bool, output_path: pathlib.Path | None
@@ -142,6 +177,7 @@ def show_and_save_figure(
     """Open the figure, then save it if an output path was provided."""
     if show:
         figure.show()
+
     if output_path is None:
         return None
     try:

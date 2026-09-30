@@ -1,6 +1,5 @@
 """`nagcsu match`: sweep, random-search or auto-tune the deck's parameters."""
 
-import dataclasses
 import pathlib
 import time
 import typing
@@ -51,6 +50,8 @@ def list_parameters() -> None:
     show_default=True,
     help="Refuse to run more than this many values without raising the limit explicitly.",
 )
+@context.wells_option
+@context.weights_option
 @click.pass_context
 def sweep(
     ctx: click.Context,
@@ -59,6 +60,8 @@ def sweep(
     group_label: str | None,
     run_id_prefix: str,
     max_evaluations: int,
+    wells_raw: str | None,
+    weights_raw: str | None,
 ) -> None:
     """Run every value of one parameter, holding all others at their default.
 
@@ -70,8 +73,10 @@ def sweep(
         )
 
     project_config, base_deck = context.load(ctx)
+    project_config = context.apply_objective_overrides(
+        project_config, wells_raw=wells_raw, weights_raw=weights_raw
+    )
     parsed_values = [float(value) for value in values.split(",")]
-
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     sweep_records: list[ledger.RunRecord] = []
@@ -90,7 +95,10 @@ def sweep(
         display.print_outcome_line(record)
 
     evaluate = pipeline.make_evaluate(
-        project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
+        project_config,
+        base_deck,
+        run_id_prefix=run_id_prefix,
+        on_outcome=on_outcome,
     )
     result = grid.search(
         parameters.default_state(),
@@ -123,6 +131,8 @@ def sweep(
     help="Prefix for the generated run IDs in this random search, e.g. random_00000.",
 )
 @click.option("--seed", default=None, type=int, help="Random seed, for reproducible trials.")
+@context.wells_option
+@context.weights_option
 @click.pass_context
 def random_(
     ctx: click.Context,
@@ -130,15 +140,20 @@ def random_(
     trials: int,
     run_id_prefix: str,
     seed: int | None,
+    wells_raw: str | None,
+    weights_raw: str | None,
 ) -> None:
     """Randomly sample one or more parameters within their bounds."""
-    unknown = [name for name in param_names if name not in parameters.PARAMETERS]
-    if unknown:
+    unknown_params = [name for name in param_names if name not in parameters.PARAMETERS]
+    if unknown_params:
         raise click.BadParameter(
-            f"Unknown parameter(s): {unknown}. Run `nagcsu match list-parameters` to see valid names."
+            f"Unknown parameter(s): {unknown_params}. Run `nagcsu match list-parameters` to see valid names."
         )
 
     project_config, base_deck = context.load(ctx)
+    project_config = context.apply_objective_overrides(
+        project_config, wells_raw=wells_raw, weights_raw=weights_raw
+    )
     parameter_bounds = {name: parameters.PARAMETERS[name].bounds for name in param_names}
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
@@ -160,7 +175,10 @@ def random_(
         display.print_outcome_line(record)
 
     evaluate = pipeline.make_evaluate(
-        project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
+        project_config,
+        base_deck,
+        run_id_prefix=run_id_prefix,
+        on_outcome=on_outcome,
     )
     result = random_search.search(
         parameters.default_state(),
@@ -307,6 +325,7 @@ def random_(
     help="Each pass after the first searches a window this fraction as wide as the last, around the value found so far. 1 keeps full-range passes.",
 )
 @click.option("--quiet", is_flag=True, default=False, help="Do not print a line per trial.")
+@context.wells_option
 @click.option(
     "--weights",
     default=None,
@@ -338,6 +357,7 @@ def auto(
     perturbation_fraction: float,
     window_shrink: float,
     quiet: bool,
+    wells_raw: str | None,
     weights: str | None,
 ) -> None:
     """Auto-tune one parameter group at a time until J reaches its target.
@@ -356,13 +376,9 @@ def auto(
     project_config, base_deck = context.load(ctx)
     resolved_target_j = target_j if target_j is not None else project_config.objective.target_j
 
-    if weights:
-        overrides = parse_weight_overrides(weights)
-        merged_weights = {**project_config.objective.weights, **overrides}
-        project_config = dataclasses.replace(
-            project_config,
-            objective=dataclasses.replace(project_config.objective, weights=merged_weights),
-        )
+    project_config = context.apply_objective_overrides(
+        project_config, wells_raw=wells_raw, weights_raw=weights
+    )
 
     ranges = parse_range_options(range_options)
     start_overrides = parse_start_options(start_options)
@@ -381,6 +397,7 @@ def auto(
         nonlocal failed_trial_count
         if outcome.simulation_error:
             failed_trial_count += 1
+
         tag = get_current_tag()
         is_screen = tag is not None and (tag.stage or "").startswith("sensitivity")
         record = pipeline.build_run_record(
@@ -394,7 +411,10 @@ def auto(
             display.print_outcome_line(record)
 
     evaluate = pipeline.make_evaluate(
-        project_config, base_deck, run_id_prefix=run_id_prefix, on_outcome=on_outcome
+        project_config,
+        base_deck,
+        run_id_prefix=run_id_prefix,
+        on_outcome=on_outcome,
     )
 
     screen_results: list[sensitivity.SensitivityResult] = []
@@ -427,6 +447,7 @@ def auto(
         )
         if not plan:
             raise click.ClickException("The sensitivity screen left no parameter worth tuning.")
+
         ranks = sensitivity.rank_parameters(swings)
         display.console.print(display.sensitivity_table(screen_results, parameter_groups, ranks))
         display.console.print(
@@ -627,26 +648,8 @@ def resolve_tuning_space(
 
 
 def parse_weight_overrides(raw: str) -> dict[str, float]:
-    """Parse a `--weights` option value into `{vector_name: weight}`.
-
-    :param raw: Comma-separated `name=value` pairs, for example
-        `"pressure=1,watercut=0,gor=0"`.
-    :raises click.BadParameter: if a pair is malformed or a weight is
-        not a valid float.
-    """
-    overrides: dict[str, float] = {}
-    for pair in raw.split(","):
-        name, _, value = pair.partition("=")
-        name = name.strip()
-        if not name or not value:
-            raise click.BadParameter(
-                f"Malformed weight override {pair!r}; expected 'name=value', e.g. 'gor=0'."
-            )
-        try:
-            overrides[name] = float(value)
-        except ValueError as error:
-            raise click.BadParameter(f"Weight for {name!r} is not a number: {value!r}") from error
-    return overrides
+    """Parse a `--weights` option value; see `nagcsu.cli.context.parse_weight_overrides`."""
+    return context.parse_weight_overrides(raw)
 
 
 def write_parameters_snapshot(state: dict[str, float], path: pathlib.Path) -> None:
