@@ -22,5 +22,5 @@ benchmarks/runs
 .cache
 *.patch
 *.yaml
-runs/
+runs*/
 *.~lock*

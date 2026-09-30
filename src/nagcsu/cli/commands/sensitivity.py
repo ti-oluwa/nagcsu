@@ -57,6 +57,7 @@ def sensitivity_() -> None:
         "ranks, ascending (favors small groups). swing_share: total swing in J, descending."
     ),
 )
+@context.baseline_options
 @context.wells_option
 @context.weights_option
 @click.pass_context
@@ -67,6 +68,8 @@ def run(
     top_n: int | None,
     detailed: bool,
     group_rank_method: str,
+    baseline_raw: str | None,
+    base_deck_raw: str | None,
     wells_raw: str | None,
     weights_raw: str | None,
 ) -> None:
@@ -94,7 +97,19 @@ def run(
         if group_name
         else list(parameters.PARAMETERS.values())
     )
-    parameter_bounds = {spec.name: spec.bounds for spec in specs}
+    baseline = context.resolve_baseline(
+        project_config,
+        base_deck,
+        baseline_raw=baseline_raw,
+        base_deck_raw=base_deck_raw,
+    )
+    display.print_baseline(baseline)
+    # A baseline taken from an earlier run may sit outside the recommended
+    # bounds; stretch each range to include it so the probes stay around it.
+    parameter_bounds = {
+        spec.name: context.widen_bounds_to_include(spec.bounds, baseline.state[spec.name])
+        for spec in specs
+    }
     parameter_groups = {spec.name: spec.group for spec in specs}
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
@@ -105,18 +120,20 @@ def run(
             group=None,
             strategy="sensitivity",
             note="sensitivity probe",
+            baseline=baseline.ledger_label(),
+            base_deck=baseline.deck_source,
         )
         ledger.append(ledger_path, record)
 
     if detailed:
         evaluate = pipeline.make_evaluate_with_breakdown(
             project_config,
-            base_deck,
+            baseline.deck,
             run_id_prefix="sensitivity",
             on_outcome=on_outcome,
         )
         results = sensitivity.detailed_run(
-            parameters.default_state(),
+            baseline.state,
             parameter_bounds,
             evaluate,
             perturbation_fraction=perturbation_fraction,
@@ -141,12 +158,12 @@ def run(
 
     evaluate = pipeline.make_evaluate(
         project_config,
-        base_deck,
+        baseline.deck,
         run_id_prefix="sensitivity",
         on_outcome=on_outcome,
     )
     results, _ = sensitivity.run(
-        parameters.default_state(),
+        baseline.state,
         parameter_bounds,
         evaluate,
         perturbation_fraction=perturbation_fraction,

@@ -27,6 +27,9 @@ def set_key_enabled(enabled: bool) -> None:
     KEY_ENABLED = enabled
 
 
+if typing.TYPE_CHECKING:
+    from nagcsu.cli import context
+
 console = Console(highlight=False)
 """Shared console. `file` is resolved at print time, so click's test runner captures it."""
 
@@ -70,6 +73,7 @@ def print_outcome_line(record: ledger.RunRecord) -> None:
     if record.simulation_error:
         console.print(f"[red]{record.run_id}: simulation failed:[/red] {record.simulation_error}")
         return
+
     moved = ", ".join(f"{name}={value:.6g}" for name, value in (record.tuned_values or {}).items())
     detail = " | ".join(part for part in (record.group, record.stage, moved) if part)
     j_text = "J=not scored" if record.j is None else f"J={record.j:.4f}"
@@ -85,6 +89,7 @@ def parameters_table() -> Table:
     table = make_table("Tunable parameters")
     for column in ("Priority", "Group", "Parameter", "Default", "Low", "High", "Description"):
         table.add_column(column, overflow="fold")
+
     for priority, group in enumerate(constants.GROUP_TUNING_PRIORITY_ORDER, 1):
         for index, spec in enumerate(parameters.get_parameters_in_group(group)):
             table.add_row(
@@ -110,9 +115,11 @@ def trials_table(
     table.add_column("Run")
     if value_parameter:
         table.add_column(value_parameter, justify="right")
+
     table.add_column("J", justify="right")
     for name in vector_names:
         table.add_column(name, justify="right")
+
     table.add_column("Health")
     for record in records:
         is_best = best is not None and record.run_id == best.run_id
@@ -142,6 +149,7 @@ def state_table(
         ("Note", "left"),
     ):
         table.add_column(column, justify=justify, overflow="fold")  # type: ignore[arg-type]
+
     for row in reporting.get_state_rows(state):
         if not show_all and not row.changed:
             continue
@@ -149,7 +157,9 @@ def state_table(
             "-" if not row.changed or row.change_percent is None else f"{row.change_percent:+.1f}%"
         )
         note = (
-            f"[yellow]at {row.pinned} bound[/yellow]"
+            f"[cyan]{row.beyond} registered bounds[/cyan]"
+            if row.beyond
+            else f"[yellow]at {row.pinned} bound[/yellow]"
             if row.pinned
             else ("changed" if row.changed else "[dim]default[/dim]")
         )
@@ -175,9 +185,11 @@ def objective_table(record: ledger.RunRecord, *, target_j: float | None = None) 
             caption += (
                 f" (target {target_j:.4f}: {'reached' if record.j <= target_j else 'not reached'})"
             )
+
     table = make_table("Objective breakdown", caption=caption)
     for column in ("Vector", "NRMSE", "Weight", "Weighted", "Share of J"):
         table.add_column(column, justify="left" if column == "Vector" else "right")
+
     for row in reporting.get_objective_rows(record):
         table.add_row(
             row.name,
@@ -194,10 +206,12 @@ def well_table(record: ledger.RunRecord) -> Table | None:
     rows = reporting.get_well_rows(record)
     if not rows:
         return None
+
     scored = ", ".join(record.scored_wells or []) or "none (field totals only)"
     table = make_table("Per-well match", caption=f"counted in J: {scored}; others are diagnostics")
     for column in ("Well", "Water cut NRMSE", "GOR NRMSE", "In J"):
         table.add_column(column, justify="left" if column == "Well" else "right")
+
     for row in rows:
         table.add_row(
             row.well,
@@ -214,6 +228,7 @@ def group_outcomes_table(outcomes: typing.Sequence[coordinate_descent.GroupOutco
     table = make_table("Tuning path by group")
     for column in ("Group", "Start J", "End J", "Change", "Sims", "Passes", "Target"):
         table.add_column(column, justify="left" if column == "Group" else "right")
+
     for outcome in outcomes:
         delta = outcome.ending_j - outcome.starting_j
         table.add_row(
@@ -245,6 +260,7 @@ def parameter_steps_table(outcomes: typing.Sequence[coordinate_descent.GroupOutc
         table.add_column(
             column, justify="left" if column in ("Group", "Parameter", "Window") else "right"
         )
+
     for outcome in outcomes:
         for step in outcome.parameter_outcomes:
             improved = step.ending_j < step.starting_j
@@ -281,6 +297,7 @@ def sensitivity_table(
         "Swing",
     ):
         table.add_column(column, justify="left" if column in ("Parameter", "Group") else "right")
+
     for result in results:
         table.add_row(
             f"{ranks.get(result.parameter, 0):g}",
@@ -310,6 +327,7 @@ def detailed_sensitivity_table(
     table.add_column("Swing (J)", justify="right")
     for name in vector_names:
         table.add_column(name, justify="right")
+
     table.add_column("Note", overflow="fold")
     for result in results:
         table.add_row(
@@ -347,6 +365,7 @@ def group_sensitivity_table(
             justify="left" if column in ("Group", "Parameters (rank)") else "right",
             overflow="fold",
         )
+
     for group in groups:
         members = ", ".join(
             f"{name} ({group.parameter_ranks[name]:g})" for name in group.parameters
@@ -380,6 +399,7 @@ def ledger_table(records: typing.Sequence[ledger.RunRecord]) -> Table:
         "Note",
     ):
         table.add_column(column, justify="right" if column == "J" else "left", overflow="fold")
+
     best = ledger.get_best_record(list(records))
     for record in records:
         values = ", ".join(f"{v:.6g}" for v in (record.tuned_values or {}).values())
@@ -424,6 +444,7 @@ def parameter_history_table(histories: typing.Sequence[ledger.ParameterHistory])
             else "right",
             overflow="fold",
         )
+
     for history in histories:
         flat = history.j_span is not None and history.j_span < reporting.FLAT_PARAMETER_J_SPAN
         table.add_row(
@@ -448,6 +469,7 @@ def group_history_table(histories: typing.Sequence[ledger.GroupHistory]) -> Tabl
         table.add_column(
             column, justify="right" if column in ("Trials", "Best J") else "left", overflow="fold"
         )
+
     for history in histories:
         table.add_row(
             history.group,
@@ -472,6 +494,7 @@ def health_table(prt_report: PrtReport) -> Table:
     if prt_report.unconverged_well_counts:
         worst = sorted(prt_report.unconverged_well_counts.items(), key=lambda item: -item[1])[:3]
         table.add_row("Most convergence warnings", ", ".join(f"{w} ({c})" for w, c in worst))
+
     table.add_row(
         "Considered clean", "[green]yes[/green]" if prt_report.is_clean else "[yellow]no[/yellow]"
     )
@@ -491,6 +514,7 @@ def print_run_report(
         f"[bold]{record.run_id}[/bold]  logged {record.created_at}\n"
         f"strategy: {record.strategy or '-'}   group: {record.group or '-'}   "
         f"stage: {record.stage or '-'}\n"
+        f"baseline: {record.baseline or '-'}   deck: {record.base_deck or '-'}\n"
         f"parameters moved: {', '.join(record.tuned_parameters or []) or '-'}"
     )
     if record.tuned_values:
@@ -519,13 +543,15 @@ def print_run_report(
         wells = well_table(record)
         if wells is not None:
             console.print(wells)
+
     console.print(state_table(record.parameter_state, title="Final parameter state"))
     histories = ledger.summarize_parameters(records)
     if histories:
         console.print(parameter_history_table(histories))
     if prt_report is not None:
         console.print(health_table(prt_report))
-    suggestions = reporting.get_next_steps(records, target_j=target_j)
+
+    suggestions = reporting.next_steps(records, target_j=target_j)
     if suggestions:
         console.print(
             Panel("\n".join(f"- {s}" for s in suggestions), title="What to try next", expand=False)
@@ -546,6 +572,7 @@ def cleanup_table(actions: typing.Sequence[cleanup.Action], *, scope: str) -> Ta
         table.add_column(
             column, justify="right" if column in ("J", "Freed") else "left", overflow="fold"
         )
+
     for action in actions:
         record = action.target.record
         if action.delete_whole_directory:
@@ -554,6 +581,7 @@ def cleanup_table(actions: typing.Sequence[cleanup.Action], *, scope: str) -> Ta
             files = f"delete {len(action.files_to_delete)}, keep {len(action.files_to_keep)}"
         else:
             files = "-" if action.target.directory is None else "untouched"
+
         size = action.bytes_to_free
         table.add_row(
             action.target.run_id,
@@ -601,6 +629,7 @@ def range_table(suggestions: typing.Sequence[ranges.RangeSuggestion]) -> Table:
             justify="right" if column in ("Trials", "Best", "J span") else "left",
             overflow="fold",
         )
+
     colors = {"bracketed": "green", "flat": "dim", "insufficient": "dim"}
     for suggestion in suggestions:
         suggested = (
@@ -649,7 +678,21 @@ def print_key(*term_groups: typing.Iterable[str]) -> None:
     """Print one key covering every term in `term_groups`, unless keys are turned off."""
     if not KEY_ENABLED:
         return
+
     terms = [term for group in term_groups for term in group]
     table = key_table(terms)
     if table is not None:
         console.print(table)
+
+
+def print_baseline(baseline: "context.Baseline") -> None:
+    """One line saying where this command starts from."""
+    if baseline.run_id:
+        j_text = "" if baseline.j is None else f", J={baseline.j:.4f}"
+        console.print(
+            f"Baseline: {baseline.spec} -> run {baseline.run_id}{j_text}; deck: {baseline.deck_source}"
+        )
+    elif baseline.spec == "default":
+        console.print("Baseline: registered defaults; deck: " + baseline.deck_source)
+    else:
+        console.print(f"Baseline: {baseline.spec}; deck: {baseline.deck_source}")

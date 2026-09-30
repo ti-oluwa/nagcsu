@@ -50,6 +50,7 @@ def list_parameters() -> None:
     show_default=True,
     help="Refuse to run more than this many values without raising the limit explicitly.",
 )
+@context.baseline_options
 @context.wells_option
 @context.weights_option
 @click.pass_context
@@ -60,6 +61,8 @@ def sweep(
     group_label: str | None,
     run_id_prefix: str,
     max_evaluations: int,
+    baseline_raw: str | None,
+    base_deck_raw: str | None,
     wells_raw: str | None,
     weights_raw: str | None,
 ) -> None:
@@ -76,7 +79,15 @@ def sweep(
     project_config = context.apply_objective_overrides(
         project_config, wells_raw=wells_raw, weights_raw=weights_raw
     )
+    baseline = context.resolve_baseline(
+        project_config,
+        base_deck,
+        baseline_raw=baseline_raw,
+        base_deck_raw=base_deck_raw,
+    )
+    display.print_baseline(baseline)
     parsed_values = [float(value) for value in values.split(",")]
+    check_values_against_limits(param_name, parsed_values)
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     sweep_records: list[ledger.RunRecord] = []
@@ -89,6 +100,8 @@ def sweep(
             note=f"sweep of {param_name}",
             tuned_parameters=[param_name],
             stage="sweep",
+            baseline=baseline.ledger_label(),
+            base_deck=baseline.deck_source,
         )
         ledger.append(ledger_path, record)
         sweep_records.append(record)
@@ -96,12 +109,12 @@ def sweep(
 
     evaluate = pipeline.make_evaluate(
         project_config,
-        base_deck,
+        baseline.deck,
         run_id_prefix=run_id_prefix,
         on_outcome=on_outcome,
     )
     result = grid.search(
-        parameters.default_state(),
+        baseline.state,
         {param_name: parsed_values},
         evaluate,
         max_evaluations=max_evaluations,
@@ -131,6 +144,16 @@ def sweep(
     help="Prefix for the generated run IDs in this random search, e.g. random_00000.",
 )
 @click.option("--seed", default=None, type=int, help="Random seed, for reproducible trials.")
+@click.option(
+    "--range",
+    "range_options",
+    multiple=True,
+    help=(
+        "Sampling range for one --param as NAME=LOW:HIGH, repeatable. May go past the "
+        "registered bounds (limited only by hard physical limits)."
+    ),
+)
+@context.baseline_options
 @context.wells_option
 @context.weights_option
 @click.pass_context
@@ -140,6 +163,9 @@ def random_(
     trials: int,
     run_id_prefix: str,
     seed: int | None,
+    range_options: tuple[str, ...],
+    baseline_raw: str | None,
+    base_deck_raw: str | None,
     wells_raw: str | None,
     weights_raw: str | None,
 ) -> None:
@@ -154,8 +180,21 @@ def random_(
     project_config = context.apply_objective_overrides(
         project_config, wells_raw=wells_raw, weights_raw=weights_raw
     )
-    parameter_bounds = {name: parameters.PARAMETERS[name].bounds for name in param_names}
+    baseline = context.resolve_baseline(
+        project_config,
+        base_deck,
+        baseline_raw=baseline_raw,
+        base_deck_raw=base_deck_raw,
+    )
+    display.print_baseline(baseline)
+    sampling_ranges = parse_range_options(range_options)
+    stray = sorted(set(sampling_ranges) - set(param_names))
+    if stray:
+        raise click.BadParameter(f"--range given for {stray} but they are not in --param.")
 
+    parameter_bounds = {
+        name: sampling_ranges.get(name, parameters.PARAMETERS[name].bounds) for name in param_names
+    }
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
 
     involved_groups = sorted({parameters.PARAMETERS[name].group for name in param_names})
@@ -169,6 +208,8 @@ def random_(
             note=f"random search over {list(param_names)}",
             tuned_parameters=list(param_names),
             stage="random",
+            baseline=baseline.ledger_label(),
+            base_deck=baseline.deck_source,
         )
         ledger.append(ledger_path, record)
         random_records.append(record)
@@ -176,12 +217,12 @@ def random_(
 
     evaluate = pipeline.make_evaluate(
         project_config,
-        base_deck,
+        baseline.deck,
         run_id_prefix=run_id_prefix,
         on_outcome=on_outcome,
     )
     result = random_search.search(
-        parameters.default_state(),
+        baseline.state,
         parameter_bounds,
         evaluate,
         n_trials=trials,
@@ -326,6 +367,7 @@ def random_(
     help="Each pass after the first searches a window this fraction as wide as the last, around the value found so far. 1 keeps full-range passes.",
 )
 @click.option("--quiet", is_flag=True, default=False, help="Do not print a line per trial.")
+@context.baseline_options
 @context.wells_option
 @click.option(
     "--weights",
@@ -358,6 +400,8 @@ def auto(
     perturbation_fraction: float,
     window_shrink: float,
     quiet: bool,
+    baseline_raw: str | None,
+    base_deck_raw: str | None,
     wells_raw: str | None,
     weights: str | None,
 ) -> None:
@@ -388,8 +432,18 @@ def auto(
         param_names=param_names,
         ranges=ranges,
     )
-    start_state = parameters.default_state()
+    baseline = context.resolve_baseline(
+        project_config,
+        base_deck,
+        baseline_raw=baseline_raw,
+        base_deck_raw=base_deck_raw,
+    )
+    display.print_baseline(baseline)
+    start_state = dict(baseline.state)
     start_state.update(start_overrides)
+    group_parameter_bounds = widen_bounds_for_start_values(
+        group_parameter_bounds, start_state, explicit_ranges=ranges
+    )
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
     failed_trial_count = 0
@@ -406,6 +460,8 @@ def auto(
             group=None,
             strategy="sensitivity" if is_screen else "coordinate_descent",
             note=f"auto-tune {tag.stage}" if tag and tag.stage else "auto-tune trial",
+            baseline=baseline.ledger_label(),
+            base_deck=baseline.deck_source,
         )
         ledger.append(ledger_path, record)
         if not quiet:
@@ -413,7 +469,7 @@ def auto(
 
     evaluate = pipeline.make_evaluate(
         project_config,
-        base_deck,
+        baseline.deck,
         run_id_prefix=run_id_prefix,
         on_outcome=on_outcome,
     )
@@ -491,13 +547,16 @@ def auto(
     changed = [
         name
         for name, value in result.best.state.items()
-        if abs(value - parameters.default_state().get(name, value)) > 1e-12
-        and name in parameters.PARAMETERS
+        if abs(value - start_state.get(name, value)) > 1e-12 and name in parameters.PARAMETERS
     ]
-    final_run_id = "auto_final"
+    final_run_id = unique_run_id(
+        f"{run_id_prefix}_final",
+        [record.run_id for record in ledger.load(ledger_path)],
+        output_root=project_config.get_resolved_path(project_config.output_root),
+    )
     final_outcome = pipeline.execute(
         project_config,
-        base_deck,
+        baseline.deck,
         result.best.state,
         run_id=final_run_id,
         score=True,
@@ -509,6 +568,8 @@ def auto(
         note=f"auto-tune final state after {len(result.trials)} trials across {[outcome.group for outcome in outcomes]}",
         tuned_parameters=changed,
         stage="final",
+        baseline=baseline.ledger_label(),
+        base_deck=baseline.deck_source,
     )
     ledger.append(ledger_path, final_record)
 
@@ -543,7 +604,7 @@ def auto(
     if starting_j and final_record.j is not None and starting_j != float("inf"):
         summary += f", J {starting_j:.4f} -> {final_record.j:.4f} ({(starting_j - final_record.j) / starting_j * 100:.1f}% better)"
     click.echo(summary)
-    for step in reporting.get_next_steps(all_records, target_j=resolved_target_j):
+    for step in reporting.next_steps(all_records, target_j=resolved_target_j):
         click.echo(f"- {step}")
 
     click.echo(f"Final calibrated deck: {final_outcome.deck_path}")
@@ -566,8 +627,13 @@ def auto(
 def parse_range_options(raw: typing.Sequence[str]) -> dict[str, tuple[float, float]]:
     """Parse repeated `--range NAME=LOW:HIGH` values.
 
+    A range may extend past the parameter's recommended `bounds`; it is
+    only required to stay inside the hard physical limits (see
+    `nagcsu.parameters.PHYSICAL_LIMITS`). A note is printed when it does
+    go past the recommended bounds.
+
     :raises click.BadParameter: for malformed text, an unknown parameter,
-        `low >= high`, or a range outside the parameter's registered bounds.
+        `low >= high`, or a range outside the physical limits.
     """
     ranges: dict[str, tuple[float, float]] = {}
     for item in raw:
@@ -578,21 +644,32 @@ def parse_range_options(raw: typing.Sequence[str]) -> dict[str, tuple[float, flo
                 f"Malformed or unknown --range {item!r}; expected NAME=LOW:HIGH with a name "
                 f"from `nagcsu match list-parameters`."
             )
+
         try:
             low, high = float(low_text), float(high_text)
         except ValueError as error:
             raise click.BadParameter(f"--range {item!r} has a non-numeric bound.") from error
-        bound_low, bound_high = parameters.PARAMETERS[name].bounds
-        if low >= high or low < bound_low or high > bound_high:
+
+        limit_low, limit_high = parameters.get_physical_limits(name)
+        if low >= high or low < limit_low or high > limit_high:
             raise click.BadParameter(
-                f"--range for {name} must satisfy {bound_low:g} <= LOW < HIGH <= {bound_high:g}; got {low:g}:{high:g}."
+                f"--range for {name} must satisfy {limit_low:g} <= LOW < HIGH <= {limit_high:g} "
+                f"(the physical limits); got {low:g}:{high:g}."
+            )
+
+        bound_low, bound_high = parameters.PARAMETERS[name].bounds
+        if low < bound_low or high > bound_high:
+            click.echo(
+                f"Note: --range {name}={low:g}:{high:g} goes past the recommended bounds "
+                f"{bound_low:g} to {bound_high:g}; allowed.",
+                err=True,
             )
         ranges[name] = (low, high)
     return ranges
 
 
 def parse_start_options(raw: typing.Sequence[str]) -> dict[str, float]:
-    """Parse repeated `--start NAME=VALUE` values, checking bounds."""
+    """Parse repeated `--start NAME=VALUE` values, checking physical limits only."""
     starts: dict[str, float] = {}
     for item in raw:
         name, _, value_text = item.partition("=")
@@ -604,11 +681,71 @@ def parse_start_options(raw: typing.Sequence[str]) -> dict[str, float]:
             value = float(value_text)
         except ValueError as error:
             raise click.BadParameter(f"--start {item!r} is not a number.") from error
-        low, high = parameters.PARAMETERS[name].bounds
-        if not low <= value <= high:
-            raise click.BadParameter(f"--start for {name} must be within {low:g} to {high:g}.")
+        limit_low, limit_high = parameters.get_physical_limits(name)
+        if not limit_low <= value <= limit_high:
+            raise click.BadParameter(
+                f"--start for {name} must be within the physical limits {limit_low:g} to {limit_high:g}."
+            )
         starts[name] = value
     return starts
+
+
+def check_values_against_limits(name: str, values: typing.Sequence[float]) -> None:
+    """Reject sweep values outside the physical limits and note those past the bounds.
+
+    :raises click.BadParameter: if any value is outside the physical limits.
+    """
+    limit_low, limit_high = parameters.get_physical_limits(name)
+    invalid = [value for value in values if not limit_low <= value <= limit_high]
+    if invalid:
+        raise click.BadParameter(
+            f"{name} values {invalid} are outside the physical limits {limit_low:g} to {limit_high:g}."
+        )
+    beyond = [value for value in values if parameters.get_bound_violation(name, value)]
+    if beyond:
+        low, high = parameters.PARAMETERS[name].bounds
+        click.echo(
+            f"Note: {name} values {beyond} are outside the recommended bounds {low:g} to "
+            f"{high:g}; running them anyway.",
+            err=True,
+        )
+
+
+def widen_bounds_for_start_values(
+    group_parameter_bounds: dict[str, dict[str, tuple[float, float]]],
+    start_state: dict[str, float],
+    *,
+    explicit_ranges: dict[str, tuple[float, float]],
+) -> dict[str, dict[str, tuple[float, float]]]:
+    """Make sure each search range contains the state the search starts from.
+
+    A baseline taken from an earlier run may sit outside the recommended
+    bounds (a range that was deliberately extended). Without this, the
+    search would be confined to a range that excludes its own starting
+    point. Ranges the user gave explicitly are left exactly as given.
+    """
+    widened: dict[str, dict[str, tuple[float, float]]] = {}
+    for group, members in group_parameter_bounds.items():
+        widened[group] = {
+            name: bounds
+            if name in explicit_ranges
+            else context.widen_bounds_to_include(bounds, start_state[name])
+            for name, bounds in members.items()
+        }
+    return widened
+
+
+def unique_run_id(base: str, taken: typing.Iterable[str], *, output_root: pathlib.Path) -> str:
+    """`base`, or `base2`, `base3`... so a later session never overwrites an earlier one.
+
+    A name counts as taken if it is in `taken` or already a directory under `output_root`.
+    """
+    used = set(taken)
+    candidate, counter = base, 1
+    while candidate in used or (output_root / candidate).exists():
+        counter += 1
+        candidate = f"{base}{counter}"
+    return candidate
 
 
 def resolve_tuning_space(

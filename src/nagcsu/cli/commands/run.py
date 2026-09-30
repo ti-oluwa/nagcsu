@@ -3,7 +3,7 @@
 import click
 
 from nagcsu import ledger, pipeline
-from nagcsu.cli import context
+from nagcsu.cli import context, display
 
 
 @click.command(name="run")
@@ -19,6 +19,7 @@ from nagcsu.cli import context
 )
 @click.option("--no-score", is_flag=True, help="Skip scoring against the observed history.")
 @click.option("--note", default="", help="Free-text note saved to the run ledger.")
+@context.baseline_options
 @context.wells_option
 @context.weights_option
 @click.pass_context
@@ -28,20 +29,31 @@ def run(
     run_id: str | None,
     no_score: bool,
     note: str,
+    baseline_raw: str | None,
+    base_deck_raw: str | None,
     wells_raw: str | None,
     weights_raw: str | None,
 ) -> None:
     """Run the deck once and log the result to the run ledger.
 
-    With no `--param`, this runs the baseline deck exactly as shipped.
-    Every parameter not given a `--param` falls back to its default;
-    see `nagcsu match list-parameters` for the full set of names.
+    With no `--param` and no `--baseline`, this runs the deck exactly as shipped.
+    With `--baseline best` (or a run ID, or `latest`) it re-runs from that run's
+    parameters and deck, and any `--param` overrides are applied on top. Every
+    parameter not set by either falls back to its default; see
+    `nagcsu match list-parameters` for the full set of names.
     """
     project_config, base_deck = context.load(ctx)
     project_config = context.apply_objective_overrides(
         project_config, wells_raw=wells_raw, weights_raw=weights_raw
     )
-    state = context.parse_param_options(param_pairs)
+    baseline = context.resolve_baseline(
+        project_config,
+        base_deck,
+        baseline_raw=baseline_raw,
+        base_deck_raw=base_deck_raw,
+    )
+    display.print_baseline(baseline)
+    state = {**baseline.state, **context.parse_param_options(param_pairs)}
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
     records = ledger.load(ledger_path)
@@ -51,12 +63,19 @@ def run(
 
     outcome = pipeline.execute(
         project_config,
-        base_deck,
+        baseline.deck,
         state,
         run_id=resolved_run_id,
         score=not no_score,
     )
-    record = pipeline.build_run_record(outcome, group=None, strategy=None, note=note)
+    record = pipeline.build_run_record(
+        outcome,
+        group=None,
+        strategy=None,
+        note=note,
+        baseline=baseline.ledger_label(),
+        base_deck=baseline.deck_source,
+    )
     ledger.append(ledger_path, record)
 
     context.echo_outcome_header(record)

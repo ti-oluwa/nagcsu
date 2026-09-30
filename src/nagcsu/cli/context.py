@@ -1,9 +1,12 @@
 """Shared plumbing every `nagcsu` subcommand uses."""
 
 import dataclasses
+import difflib
+import pathlib
 import typing
 
 import click
+import yaml
 
 from nagcsu import config, history, ledger, parameters
 from nagcsu.deck import Deck
@@ -193,3 +196,147 @@ def warn_if_every_trial_failed(best_j: float, *, command: str) -> None:
             f"best result. Check `flow_executable` in the project config and that OPM Flow "
             f"runs on this deck at all (try a plain `nagcsu run` first)."
         )
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class Baseline:
+    """The parameter state and deck a command starts from."""
+
+    state: dict[str, float]
+    """Full parameter state, every registered parameter present."""
+
+    deck: Deck
+    """Deck the state is patched into."""
+
+    spec: str
+    """What was asked for: "default", "best", "latest", a run ID or a file path."""
+
+    run_id: str | None
+    """Run the state came from, or `None` for defaults or a snapshot file."""
+
+    j: float | None
+    """That run's J, if it had one."""
+
+    deck_source: str
+    """"project", "run:<run_id>" or a path: where `deck` was loaded from."""
+
+    def ledger_label(self) -> str:
+        """Short text stored on each run record as `RunRecord.baseline`."""
+        if self.run_id:
+            return f"run:{self.run_id}"
+        return "default" if self.spec == "default" else f"file:{self.spec}"
+
+
+def baseline_options(
+    function: typing.Callable[..., typing.Any],
+) -> typing.Callable[..., typing.Any]:
+    """Add the shared `--baseline` and `--base-deck` options to a command."""
+    function = click.option(
+        "--base-deck",
+        "base_deck_raw",
+        default=None,
+        help=(
+            "Deck to patch parameters into: 'auto' (the baseline run's own deck when it "
+            "still exists, else the project deck), 'project', or a path to a .DATA file."
+        ),
+    )(function)
+    return click.option(
+        "--baseline",
+        "baseline_raw",
+        default=None,
+        help=(
+            "Where to start from: 'default' (registered defaults), 'best' (lowest-J run), "
+            "'latest', a run ID, or a parameters.yaml path. Defaults to `baseline` in "
+            "nagcsu.yaml, which defaults to 'default'. --param values still apply on top."
+        ),
+    )(function)
+
+
+def resolve_baseline(
+    project_config: config.ProjectConfig,
+    project_deck: Deck,
+    *,
+    baseline_raw: str | None = None,
+    base_deck_raw: str | None = None,
+) -> Baseline:
+    """Work out the state and deck a command should start from.
+
+    :param project_deck: The deck loaded from `deck_path`.
+    :param baseline_raw: The `--baseline` value, or `None` to use the
+        project config's `baseline`.
+    :param base_deck_raw: The `--base-deck` value, or `None` for 'auto'.
+    :raises click.ClickException: if the named run or file does not exist
+        or has no usable state.
+    """
+    spec = (baseline_raw if baseline_raw is not None else project_config.baseline).strip()
+    defaults = parameters.default_state()
+    run_id: str | None = None
+    j: float | None = None
+    state = dict(defaults)
+
+    if spec.lower() != "default":
+        if spec.lower().endswith((".yaml", ".yml")):
+            snapshot_path = pathlib.Path(spec)
+            if not snapshot_path.is_file():
+                raise click.ClickException(f"Baseline file not found: {spec}")
+            loaded = yaml.safe_load(snapshot_path.read_text(encoding="utf-8")) or {}
+            unknown = [name for name in loaded if name not in parameters.PARAMETERS]
+            if unknown:
+                raise click.ClickException(f"{spec} has unknown parameters: {unknown}")
+            state.update({name: float(value) for name, value in loaded.items()})
+        else:
+            records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
+            usable = [r for r in records if r.parameter_state and not r.simulation_error]
+            if spec.lower() == "best":
+                record = ledger.get_best_record(usable)
+                if record is None:
+                    raise click.ClickException("--baseline best: no scored run in the ledger yet.")
+            elif spec.lower() == "latest":
+                if not usable:
+                    raise click.ClickException(
+                        "--baseline latest: the ledger has no usable run yet."
+                    )
+                record = usable[-1]
+            else:
+                matches = [r for r in records if r.run_id == spec]
+                if not matches:
+                    close = difflib.get_close_matches(spec, [r.run_id for r in records], n=3)
+                    hint = f" Did you mean: {', '.join(close)}?" if close else ""
+                    raise click.ClickException(f"--baseline: no run {spec!r} in the ledger.{hint}")
+                record = matches[0]
+                if not record.parameter_state:
+                    raise click.ClickException(f"Run {spec!r} has no recorded parameter state.")
+
+            run_id, j = record.run_id, record.j
+            state.update({
+                n: float(v)
+                for n, v in record.parameter_state.items()
+                if n in parameters.PARAMETERS
+            })
+
+    deck, deck_source = project_deck, "project"
+    wanted = (base_deck_raw or "auto").strip()
+    if wanted.lower() == "project":
+        pass
+    elif wanted.lower() == "auto":
+        if run_id:
+            run_deck = (
+                project_config.get_resolved_path(project_config.output_root)
+                / run_id
+                / project_config.deck_path.name
+            )
+            if run_deck.is_file():
+                deck, deck_source = Deck.load(run_deck), f"run:{run_id}"
+            else:
+                click.echo(f"Note: run {run_id}'s deck is gone; using the project deck.", err=True)
+    else:
+        try:
+            deck, deck_source = Deck.load(wanted), wanted
+        except FileNotFoundError as error:
+            raise click.ClickException(f"--base-deck not found: {wanted}") from error
+    return Baseline(state=state, deck=deck, spec=spec, run_id=run_id, j=j, deck_source=deck_source)
+
+
+def widen_bounds_to_include(bounds: tuple[float, float], value: float) -> tuple[float, float]:
+    """Stretch `bounds` so `value` (a baseline outside the recommended range) sits inside."""
+    return min(bounds[0], value), max(bounds[1], value)

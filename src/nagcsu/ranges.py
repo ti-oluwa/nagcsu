@@ -4,6 +4,9 @@ The ledger holds every single-parameter trial with its J. Around a
 parameter's best value there is usually a "basin" of values that all score
 close to the best; the useful next search range covers that basin with some
 margin, not the full registered bounds and not a blind widening of one side.
+The registered bounds are a recommendation: a suggestion may go past them when
+the trials say the best value lies there, and is limited only by the hard
+physical limits in `nagcsu.parameters.PHYSICAL_LIMITS`.
 
 This is a heuristic on logged trials, not a model fit. Each trial was run
 with the other parameters at whatever values the search had reached at that
@@ -168,9 +171,10 @@ def suggest_range(
         low_index -= 1
     while high_index < len(points) - 1 and js[high_index + 1] <= threshold:
         high_index += 1
+
     basin_low, basin_high = points[low_index][0], points[high_index][0]
     tried_span = tried_high - tried_low
-    tolerance = 1e-9 * max(1.0, registered_high - registered_low)
+    limit_low, limit_high = parameters.get_physical_limits(name)
 
     notes: list[str] = []
     if low_index > 0:
@@ -179,27 +183,29 @@ def suggest_range(
     else:
         open_low = True
         low = basin_low - OPEN_SIDE_EXTENSION * tried_span
-        if basin_low - registered_low <= tolerance:
-            low = registered_low
-            notes.append(
-                "best is at the registered lower bound; widen the bound in parameters.py if it keeps winning"
-            )
+        if low <= limit_low:
+            low = limit_low
+            notes.append(f"reaches the physical lower limit {limit_low:.6g}")
+
     if high_index < len(points) - 1:
         high = (basin_high + points[high_index + 1][0]) / 2.0
         open_high = False
     else:
         open_high = True
         high = basin_high + OPEN_SIDE_EXTENSION * tried_span
-        if registered_high - basin_high <= tolerance:
-            high = registered_high
-            notes.append(
-                "best is at the registered upper bound; widen the bound in parameters.py if it keeps winning"
-            )
+        if high >= limit_high:
+            high = limit_high
+            notes.append(f"reaches the physical upper limit {limit_high:.6g}")
 
-    low = max(registered_low, low)
-    high = min(registered_high, high)
+    low = max(limit_low, low)
+    high = min(limit_high, high)
     if high <= low:
-        low, high = max(registered_low, tried_low), min(registered_high, tried_high)
+        low, high = max(limit_low, tried_low), min(limit_high, tried_high)
+    if low < registered_low or high > registered_high:
+        notes.append(
+            f"goes past the registered bounds {registered_low:.6g} to {registered_high:.6g}; "
+            f"allowed when passed with --range"
+        )
 
     status = (
         "open_both"

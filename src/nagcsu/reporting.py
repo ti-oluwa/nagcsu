@@ -39,6 +39,10 @@ class StateRow:
     pinned: str | None
     """"low" or "high" when the value sits at a bound edge, else `None`."""
 
+    beyond: str | None = None
+    """"below" or "above" when the value lies outside the registered bounds,
+    which is allowed when a search range was deliberately extended."""
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ObjectiveRow:
@@ -93,7 +97,14 @@ def get_state_rows(state: dict[str, float]) -> list[StateRow]:
         value = state[spec.name]
         low, high = spec.bounds
         margin = (high - low) * PINNED_AT_BOUND_FRACTION
-        pinned = "low" if value <= low + margin else ("high" if value >= high - margin else None)
+        beyond = parameters.get_bound_violation(spec.name, value)
+        pinned = (
+            None
+            if beyond
+            else "low"
+            if value <= low + margin
+            else ("high" if value >= high - margin else None)
+        )
         changed = abs(value - spec.default) > 1e-12 * max(1.0, abs(spec.default))
         rows.append(
             StateRow(
@@ -107,6 +118,7 @@ def get_state_rows(state: dict[str, float]) -> list[StateRow]:
                 bounds=spec.bounds,
                 changed=changed,
                 pinned=pinned if changed else None,
+                beyond=beyond,
             )
         )
     group_order = {
@@ -152,7 +164,7 @@ def get_baseline_record(records: list[ledger.RunRecord]) -> ledger.RunRecord | N
     return (untouched or scored or [None])[0]
 
 
-def get_next_steps(
+def next_steps(
     records: list[ledger.RunRecord],
     *,
     target_j: float | None = None,
@@ -267,6 +279,7 @@ def render_run_report(
         moved = ", ".join(f"{name}={value:.6g}" for name, value in record.tuned_values.items())
         lines.append(f"| Values | {moved} |")
     lines.append(f"| Stage | {record.stage or '-'} |")
+    lines.append(f"| Baseline | {record.baseline or '-'} (deck: {record.base_deck or '-'}) |")
     lines.append(f"| PRT clean | {_yes_or_no(record.prt_is_clean)} |")
 
     lines.append("")
@@ -370,7 +383,11 @@ def render_run_report(
             "-" if row.change_percent is None or not row.changed else f"{row.change_percent:+.1f}%"
         )
         note = (
-            f"at {row.pinned} bound" if row.pinned else ("changed" if row.changed else "default")
+            f"{row.beyond} registered bounds"
+            if row.beyond
+            else f"at {row.pinned} bound"
+            if row.pinned
+            else ("changed" if row.changed else "default")
         )
         lines.append(
             f"| {row.name} | {row.group} | {row.value:.6g} | {row.default:.6g} | {change} | "
@@ -449,7 +466,7 @@ def render_run_report(
         for result in sensitivity_results[:8]:
             lines.append(f"| {result.parameter} | {result.swing:.4f} |")
 
-    suggestions = get_next_steps(records or [record], target_j=target_j)
+    suggestions = next_steps(records or [record], target_j=target_j)
     if suggestions:
         lines.append("")
         lines.append("## What to try next")

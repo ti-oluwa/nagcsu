@@ -253,6 +253,8 @@ def build_run_record(
     note: str,
     tuned_parameters: typing.Sequence[str] | None = None,
     stage: str | None = None,
+    baseline: str | None = None,
+    base_deck: str | None = None,
 ) -> ledger.RunRecord:
     """Build a `ledger.RunRecord` from a `RunOutcome`.
 
@@ -300,6 +302,8 @@ def build_run_record(
             if name in outcome.resolved_state
         },
         stage=resolved_stage,
+        baseline=baseline,
+        base_deck=base_deck,
         objective_weights=(
             dict(outcome.objective_result.weights) if outcome.objective_result else None
         ),

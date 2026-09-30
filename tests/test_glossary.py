@@ -12,7 +12,10 @@ from nagcsu.deck import Deck
 TERM_GROUPS = {
     name: value
     for name, value in vars(glossary).items()
-    if name.isupper() and not name.startswith("_") and isinstance(value, tuple)
+    if name.isupper()
+    and not name.startswith("_")
+    and name != "ENTRIES"
+    and isinstance(value, tuple)
 }
 
 

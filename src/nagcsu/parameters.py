@@ -188,6 +188,47 @@ groups' tuning priority.
 """
 
 
+PHYSICAL_LIMITS: typing.Final[dict[str, tuple[float, float]]] = {
+    "aquifer.radius": (100.0, 1_000_000.0),
+    "aquifer.permeability": (0.1, 100_000.0),
+    "aquifer.thickness": (1.0, 5_000.0),
+    "aquifer.encroachment_angle": (1.0, 360.0),
+    "permeability.areal_contrast": (0.0, 0.95),
+    "sgof.sorg": (0.0, 0.6),
+    "sgof.oil_exponent": (0.1, 20.0),
+    "sgof.critical_gas_saturation": (0.0, 0.5),
+    "sgof.max_gas_relative_permeability": (0.01, 1.0),
+    "sgof.gas_exponent": (0.1, 20.0),
+    "swof.max_water_relative_permeability": (0.01, 1.0),
+    "swof.residual_oil_saturation": (0.0, 0.6),
+    "swof.oil_exponent": (0.1, 20.0),
+    "swof.water_exponent": (0.1, 20.0),
+    "rock.compressibility": (1.0e-8, 1.0e-3),
+    "porosity.multiplier": (0.1, 3.0),
+}
+"""Hard physical limits per parameter. `ParameterSpec.bounds` is the
+recommended search range and is deliberately conservative; these are only
+the values that would make the deck nonsensical (a negative permeability,
+a saturation above 1). A range or start value outside `bounds` but inside
+these limits is allowed, since the data may genuinely want it."""
+
+
+def get_physical_limits(name: str) -> tuple[float, float]:
+    """Return the hard limits for `name`, never narrower than its search bounds."""
+    low, high = PHYSICAL_LIMITS.get(name, PARAMETERS[name].bounds)
+    bound_low, bound_high = PARAMETERS[name].bounds
+    return min(low, bound_low), max(high, bound_high)
+
+
+def get_bound_violation(name: str, value: float) -> str | None:
+    """Say how `value` sits against the recommended search bounds.
+
+    :returns: `"below"` or `"above"` when outside `bounds`, else `None`.
+    """
+    low, high = PARAMETERS[name].bounds
+    return "below" if value < low else ("above" if value > high else None)
+
+
 def get_parameters_in_group(group: str) -> list[ParameterSpec]:
     """Return the `ParameterSpec` entries belonging to `group`, in a stable order."""
     return [spec for spec in PARAMETERS.values() if spec.group == group]

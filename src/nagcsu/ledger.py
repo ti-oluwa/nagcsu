@@ -79,6 +79,16 @@ class RunRecord:
     "baseline", "descent/pass2", "sensitivity/high" or "final".
     """
 
+    baseline: str | None = None
+    """Where this run's search started from: "default" or "run:<run_id>" or
+    "file:<name>". `None` for runs logged before baselines existed.
+    """
+
+    base_deck: str | None = None
+    """Which deck the parameters were patched into: "project" (the configured
+    deck), "run:<run_id>" (a previous run's deck) or a path.
+    """
+
     well_nrmse: dict[str, float] | None = None
     """Per-well NRMSE keyed like `WWCT:AFIESERE`, for every well the
     history covers, whether or not it fed J. `None` when the run had no

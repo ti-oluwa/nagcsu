@@ -65,8 +65,18 @@ ENTRIES: tuple[Entry, ...] = (
     ),
     Entry(
         "Bounds",
-        "The registered minimum and maximum for the parameter.",
-        "Searches never go outside them. Edit parameters.py to widen them.",
+        "The recommended search range for the parameter.",
+        "Default searches stay inside it, but a `--range` may go past it, up to the hard physical limits.",
+    ),
+    Entry(
+        "below/above registered bounds",
+        "The value is outside the recommended range, which happens when a search range was deliberately extended.",
+        "Fine if the data asked for it. Keep the extended `--range` for the next batch, or start from this run with `--baseline`.",
+    ),
+    Entry(
+        "Baseline",
+        "What a run started from: registered defaults, or a previous run's parameters (and deck).",
+        "Chaining phases from the best run (`--baseline best`) builds on earlier progress instead of restarting from defaults.",
     ),
     Entry(
         "at low/high bound",
@@ -267,7 +277,14 @@ GLOSSARY: typing.Final[dict[str, Entry]] = {entry.term: entry for entry in ENTRI
 
 OBJECTIVE = ("J", "NRMSE", "Weight", "Weighted", "Share of J", "Target")
 WELLS = ("Water cut NRMSE / GOR NRMSE", "In J")
-STATE = ("Default", "Change", "Bounds", "at low/high bound", "Group")
+STATE = (
+    "Default",
+    "Change",
+    "Bounds",
+    "at low/high bound",
+    "below/above registered bounds",
+    "Group",
+)
 TUNING_PATH = ("Start J / End J", "Change (J)", "Sims", "Passes", "Pass", "Window")
 SENSITIVITY = ("Swing", "Rank", "Low / High value", "~ one probe failed", "FAILED")
 DETAILED_SENSITIVITY = (

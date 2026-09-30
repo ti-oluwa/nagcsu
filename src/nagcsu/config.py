@@ -99,6 +99,13 @@ class ProjectConfig:
     deck_path: pathlib.Path = constants.DEFAULT_DECK_PATH
     """Path to the OPM Flow `.DATA` deck this project tunes."""
 
+    baseline: str = "default"
+    """Where searches start from: "default" (every parameter at its registered
+    default), "best" (the lowest-J run in the ledger), "latest" (the most
+    recent run), a run ID, or the path of a `parameters.yaml` snapshot.
+    Overridden per command with `--baseline`.
+    """
+
     output_root: pathlib.Path = constants.DEFAULT_OUTPUT_DIR
     """Directory each simulation run gets its own numbered subdirectory
     under. Created on first use if it does not already exist.
@@ -180,13 +187,17 @@ class ProjectConfig:
                 f"Objective weights must sum to 1.0, got {weight_total:.6f} "
                 f"from {self.objective.weights!r}"
             )
+        if not self.baseline.strip():
+            raise ValueError("baseline must not be empty; use 'default' for registered defaults")
         if not self.wells:
             raise ValueError("At least one well must be configured to score against")
+
         unknown_wells = [well for well in self.objective.wells if well not in self.wells]
         if unknown_wells:
             raise ValueError(
                 f"objective.wells {unknown_wells} are not in the configured wells {list(self.wells)}"
             )
+
         well_weight = sum(
             self.objective.weights.get(name, 0.0) for name in ("wells_watercut", "wells_gor")
         )
@@ -242,6 +253,7 @@ def load(config_path: pathlib.Path | str = constants.DEFAULT_CONFIG_FILE) -> Pro
 
     config = ProjectConfig(
         deck_path=pathlib.Path(raw.get("deck_path", constants.DEFAULT_DECK_PATH)),
+        baseline=str(raw.get("baseline", "default")),
         output_root=pathlib.Path(raw.get("output_root", constants.DEFAULT_OUTPUT_DIR)),
         ledger_path=pathlib.Path(raw.get("ledger_path", constants.DEFAULT_LEDGER_PATH)),
         flow_executable=raw.get("flow_executable", "flow"),
@@ -272,6 +284,7 @@ def save(
     config_path = pathlib.Path(config_path)
     payload = {
         "deck_path": str(config.deck_path),
+        "baseline": config.baseline,
         "output_root": str(config.output_root),
         "ledger_path": str(config.ledger_path),
         "flow_executable": config.flow_executable,

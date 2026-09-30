@@ -1,5 +1,7 @@
 """`nagcsu report`: inspect and export runs from the ledger."""
 
+import typing
+
 import click
 
 from nagcsu import glossary, ledger, prt, ranges, reporting
@@ -105,7 +107,7 @@ def parameters_(ctx: click.Context, group_name: str | None) -> None:
     if group_histories:
         display.console.print(display.group_history_table(group_histories))
 
-    for step in reporting.get_next_steps(records):
+    for step in reporting.next_steps(records):
         click.echo(f"- {step}")
     display.print_key(glossary.PARAMETER_HISTORY, glossary.GROUP_HISTORY, ("Group",))
 
@@ -149,7 +151,7 @@ def ranges_(ctx: click.Context, group_name: str | None, near_best: float, min_va
         return
     display.console.print(display.range_table(suggestions))
     display.print_key(glossary.RANGES, ("J span", "Best J", "Trials"))
-    flags = [s.range_flag() for s in suggestions if s.range_flag()]
+    flags = [typing.cast(str, s.range_flag()) for s in suggestions if s.range_flag()]
     if flags:
         click.echo("\nStart the next batch with:")
         click.echo("  nagcsu match auto " + " ".join(flags))
