@@ -7,7 +7,7 @@ import typing
 import click
 import yaml
 
-from nagcsu import constants, ledger, parameters, pipeline, reporting
+from nagcsu import constants, glossary, ledger, parameters, pipeline, reporting
 from nagcsu.algorithms import coordinate_descent, grid, random_search, sensitivity
 from nagcsu.algorithms.base import get_current_tag
 from nagcsu.cli import context, display
@@ -192,6 +192,7 @@ def random_(
     display.console.print(
         display.trials_table(ranked[:10], title="Ten best random trials (values in ledger)")
     )
+    display.print_key(("J", "NRMSE", "Health", "*"))
     click.echo(f"\nBest J={result.best.j:.4f} at:")
     for name in param_names:
         click.echo(f"  {name} = {result.best.state[name]:g}")
@@ -531,11 +532,18 @@ def auto(
             final_record.parameter_state, title="Parameters changed", show_all=False
         )
     )
+    display.print_key(
+        glossary.SENSITIVITY if screen_results else (),
+        glossary.GROUP_RANKING if ranked_groups else (),
+        glossary.TUNING_PATH,
+        glossary.OBJECTIVE,
+        glossary.STATE,
+    )
     summary = f"{len(result.trials)} trials in {time.perf_counter() - started_at:.0f}s"
     if starting_j and final_record.j is not None and starting_j != float("inf"):
         summary += f", J {starting_j:.4f} -> {final_record.j:.4f} ({(starting_j - final_record.j) / starting_j * 100:.1f}% better)"
     click.echo(summary)
-    for step in reporting.next_steps(all_records, target_j=resolved_target_j):
+    for step in reporting.get_next_steps(all_records, target_j=resolved_target_j):
         click.echo(f"- {step}")
 
     click.echo(f"Final calibrated deck: {final_outcome.deck_path}")

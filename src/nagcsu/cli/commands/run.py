@@ -45,7 +45,9 @@ def run(
 
     ledger_path = project_config.get_resolved_path(project_config.ledger_path)
     records = ledger.load(ledger_path)
-    resolved_run_id = run_id or ledger.new_run_id(records)
+    output_root = project_config.get_resolved_path(project_config.output_root)
+    on_disk = [path.name for path in output_root.iterdir()] if output_root.is_dir() else []
+    resolved_run_id = run_id or ledger.new_run_id(records, taken_ids=on_disk)
 
     outcome = pipeline.execute(
         project_config,

@@ -6,10 +6,11 @@ what `nagcsu report show` prints always agree.
 """
 
 import dataclasses
+import math
 import pathlib
 import typing
 
-from nagcsu import constants, ledger, parameters
+from nagcsu import constants, glossary, ledger, parameters, ranges
 from nagcsu.algorithms.coordinate_descent import GroupOutcome
 from nagcsu.algorithms.sensitivity import GroupSensitivity, SensitivityResult
 from nagcsu.prt import PrtReport
@@ -151,7 +152,7 @@ def get_baseline_record(records: list[ledger.RunRecord]) -> ledger.RunRecord | N
     return (untouched or scored or [None])[0]
 
 
-def next_steps(
+def get_next_steps(
     records: list[ledger.RunRecord],
     *,
     target_j: float | None = None,
@@ -175,17 +176,28 @@ def next_steps(
         steps.append(f"Never touched so far: {', '.join(untouched)}.")
 
     histories = [h for h in ledger.summarize_parameters(records) if h.j_span is not None]
-    pinned_bounds = get_parameters_pinned_at_bound(best)
-    for name, side in pinned_bounds:
-        steps.append(
-            f"`{name}` in the best run sits at its {side} bound: widen its range with "
-            f"`match auto --range {name}=LOW:HIGH` (edit `parameters.py` bounds if needed)."
-        )
+    suggestions_by_parameter = {s.parameter: s for s in ranges.suggest_ranges(records)}
+    for name, side in get_parameters_pinned_at_bound(best):
+        suggestion = suggestions_by_parameter.get(name)
+        flag = suggestion.range_flag() if suggestion else None
+        if flag:
+            steps.append(
+                f"`{name}` in the best run sits at its {side} bound: try `match auto {flag}` "
+                f"(range suggested from the trials so far)."
+            )
+        else:
+            steps.append(
+                f"`{name}` in the best run sits at its {side} bound: sweep it further out "
+                f"with `match sweep`, then run `nagcsu report ranges` for a suggested range."
+            )
 
     flat = [h for h in histories if h.trials >= 3 and (h.j_span or 0.0) < FLAT_PARAMETER_J_SPAN]
     if flat:
         names = ", ".join(h.parameter for h in flat[:5])
         steps.append(f"Explored with no measurable effect on J, leave alone: {names}.")
+
+    if any(s.range_flag() for s in suggestions_by_parameter.values()):
+        steps.append("Run `nagcsu report ranges` for data-driven starting ranges per parameter.")
 
     live = sorted(
         (h for h in histories if (h.j_span or 0.0) >= FLAT_PARAMETER_J_SPAN),
@@ -235,6 +247,7 @@ def render_run_report(
     :param show_wells: Include the per-well NRMSE section when the record has one.
     """
     lines: list[str] = []
+    key_terms: list[str] = []
     lines.append(f"# History match snapshot: {record.run_id}")
     lines.append("")
     lines.append(f"Generated from run `{record.run_id}`, logged {record.created_at}.")
@@ -264,6 +277,7 @@ def render_run_report(
             f"This run's simulation did not produce usable output: {record.simulation_error}"
         )
     else:
+        key_terms.extend(glossary.OBJECTIVE)
         lines.append("## Objective")
         lines.append("")
         if record.j is None:
@@ -294,6 +308,7 @@ def render_run_report(
     wells = get_well_rows(record) if show_wells else []
     if wells:
         lines.append("")
+        key_terms.extend(glossary.WELLS)
         lines.append("## Per-well match")
         lines.append("")
         scored = ", ".join(record.scored_wells or []) or "none (field totals only)"
@@ -309,6 +324,7 @@ def render_run_report(
 
     if group_outcomes:
         lines.append("")
+        key_terms.extend(glossary.TUNING_PATH)
         lines.append("## How this was found: tuning path")
         lines.append("")
         lines.append(
@@ -344,6 +360,7 @@ def render_run_report(
         )
 
     lines.append("")
+    key_terms.extend(glossary.STATE)
     lines.append("## Final parameter state")
     lines.append("")
     lines.append("| Parameter | Group | Value | Default | Change | Bounds | Note |")
@@ -364,6 +381,7 @@ def render_run_report(
         parameter_histories = ledger.summarize_parameters(records)
         if parameter_histories:
             lines.append("")
+            key_terms.extend(glossary.PARAMETER_HISTORY)
             lines.append("## What has been tried, per parameter")
             lines.append("")
             lines.append(
@@ -384,6 +402,7 @@ def render_run_report(
 
     if prt_report is not None:
         lines.append("")
+        key_terms.append("Health")
         lines.append("## Run health")
         lines.append("")
         lines.append(f"- Report steps completed: {len(prt_report.completed_report_steps)}")
@@ -401,6 +420,7 @@ def render_run_report(
 
     if group_sensitivities:
         lines.append("")
+        key_terms.extend(glossary.GROUP_RANKING)
         lines.append("## Group sensitivity ranking")
         lines.append("")
         lines.append(
@@ -416,6 +436,7 @@ def render_run_report(
 
     if sensitivity_results:
         lines.append("")
+        key_terms.extend(("Swing", "Rank"))
         lines.append("## Parameter sensitivity")
         lines.append("")
         lines.append(
@@ -428,13 +449,18 @@ def render_run_report(
         for result in sensitivity_results[:8]:
             lines.append(f"| {result.parameter} | {result.swing:.4f} |")
 
-    suggestions = next_steps(records or [record], target_j=target_j)
+    suggestions = get_next_steps(records or [record], target_j=target_j)
     if suggestions:
         lines.append("")
         lines.append("## What to try next")
         lines.append("")
         for suggestion in suggestions:
             lines.append(f"- {suggestion}")
+
+    key_lines = glossary.render_markdown(key_terms)
+    if key_lines:
+        lines.append("")
+        lines.extend(key_lines)
 
     lines.append("")
     return "\n".join(lines)
@@ -451,7 +477,9 @@ def write_run_report(
 
 
 def _fmt(value: float | None) -> str:
-    return "-" if value is None else f"{value:.6g}"
+    if value is None:
+        return "-"
+    return f"{value:.6g}" if math.isfinite(value) else "n/a"
 
 
 def _yes_or_no(value: bool | None) -> str:

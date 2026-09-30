@@ -8,6 +8,7 @@ attention they are likely to reward.
 """
 
 import dataclasses
+import math
 import typing
 
 import scipy.stats
@@ -20,6 +21,30 @@ DetailedEvaluateFunction = typing.Callable[[dict[str, float]], EvaluationBreakdo
 per-vector breakdown alongside `J`. Built by
 `nagcsu.pipeline.make_evaluate_with_breakdown`.
 """
+
+
+def probe_swing(base: float, at_low: float, at_high: float) -> tuple[float, int]:
+    """Swing of a value across a low and a high probe, tolerating failed probes.
+
+    A probe that failed to simulate scores as `inf` (or NaN). Subtracting
+    it directly yields an infinite swing, which then ranks that parameter
+    first and turns every share computed from a total into NaN. Instead:
+
+    - both probes finite: `abs(at_high - at_low)`.
+    - one probe failed: twice the distance from `base` to the surviving
+      probe, which assumes the response is roughly symmetric. This is an
+      estimate, and the caller is told a probe failed.
+    - both failed (or the base itself is not finite): `0.0`, since
+      nothing was learned about this parameter.
+
+    :returns: `(swing, failed_probe_count)`.
+    """
+    low_ok, high_ok = math.isfinite(at_low), math.isfinite(at_high)
+    if low_ok and high_ok:
+        return abs(at_high - at_low), 0
+    if (low_ok or high_ok) and math.isfinite(base):
+        return 2.0 * abs((at_low if low_ok else at_high) - base), 1
+    return 0.0, (2 if not (low_ok or high_ok) else 1)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -48,6 +73,12 @@ class SensitivityResult:
 
     high_value: float = 0.0
     """Parameter value used for the high probe."""
+
+    failed_probes: int = 0
+    """How many of the two probes failed to simulate. When 1, `swing` is
+    an estimate from the surviving probe (see `probe_swing`); when 2, it
+    is 0 and the parameter should be re-screened over a narrower range.
+    """
 
 
 def run(
@@ -106,15 +137,17 @@ def run(
             j_high = evaluate(high_state)
         trials.append(Trial(state=high_state, j=j_high))
 
+        swing, failed = probe_swing(base_j, j_low, j_high)
         results.append(
             SensitivityResult(
                 parameter=parameter,
                 base_j=base_j,
                 j_at_low=j_low,
                 j_at_high=j_high,
-                swing=abs(j_high - j_low),
+                swing=swing,
                 low_value=low_value,
                 high_value=high_value,
+                failed_probes=failed,
             )
         )
 
@@ -142,6 +175,9 @@ class DetailedSensitivityResult:
 
     high_value: float = 0.0
     """Parameter value used for the high probe."""
+
+    failed_probes: int = 0
+    """How many of the two probes failed to simulate; see `SensitivityResult`."""
 
     vector_swings: dict[str, float] = dataclasses.field(default_factory=dict)
     """`abs(high - low)` per scored vector's own NRMSE, keyed the same
@@ -210,21 +246,29 @@ def detailed_run(
         ):
             breakdown_high = evaluate(high_state)
 
-        vector_names = set(breakdown_low.vector_nrmse) | set(breakdown_high.vector_nrmse)
+        vector_names = (
+            set(breakdown_low.vector_nrmse)
+            | set(breakdown_high.vector_nrmse)
+            | set(base_breakdown.vector_nrmse)
+        )
+        nan = float("nan")
         vector_swings = {
-            vector_name: abs(
-                breakdown_high.vector_nrmse.get(vector_name, 0.0)
-                - breakdown_low.vector_nrmse.get(vector_name, 0.0)
-            )
+            vector_name: probe_swing(
+                base_breakdown.vector_nrmse.get(vector_name, nan),
+                breakdown_low.vector_nrmse.get(vector_name, nan),
+                breakdown_high.vector_nrmse.get(vector_name, nan),
+            )[0]
             for vector_name in vector_names
         }
+        swing, failed = probe_swing(base_breakdown.j, breakdown_low.j, breakdown_high.j)
         results.append(
             DetailedSensitivityResult(
                 parameter=parameter,
                 base_j=base_breakdown.j,
-                swing=abs(breakdown_high.j - breakdown_low.j),
+                swing=swing,
                 low_value=low_value,
                 high_value=high_value,
+                failed_probes=failed,
                 vector_swings=vector_swings,
             )
         )
@@ -275,6 +319,11 @@ class GroupSensitivity:
     """The number the group was ordered by under the chosen method."""
 
 
+def _finite(value: float) -> float:
+    """`value`, or 0.0 when it is NaN or infinite."""
+    return value if math.isfinite(value) else 0.0
+
+
 def rank_parameters(parameter_swings: dict[str, float]) -> dict[str, float]:
     """Rank parameters by swing, 1 for the largest.
 
@@ -285,7 +334,9 @@ def rank_parameters(parameter_swings: dict[str, float]) -> dict[str, float]:
     if not parameter_swings:
         return {}
     names = list(parameter_swings)
-    ranks = scipy.stats.rankdata([-parameter_swings[name] for name in names], method="average")
+    ranks = scipy.stats.rankdata(
+        [-_finite(parameter_swings[name]) for name in names], method="average"
+    )
     return {name: float(rank) for name, rank in zip(names, ranks, strict=True)}
 
 
@@ -327,6 +378,7 @@ def rank_groups(
             f"Unknown group ranking method {method!r}; use one of {GROUP_RANK_METHODS}"
         )
 
+    parameter_swings = {name: _finite(swing) for name, swing in parameter_swings.items()}
     ranks = rank_parameters(parameter_swings)
     grand_total = sum(parameter_swings.values())
     members: dict[str, list[str]] = {}
@@ -380,6 +432,7 @@ def build_tuning_plan(
 
     :returns: `[(group, [parameter, ...]), ...]` in tuning order.
     """
+    parameter_swings = {name: _finite(swing) for name, swing in parameter_swings.items()}
     largest = max(parameter_swings.values(), default=0.0)
     threshold = largest * min_relative_swing
     plan: list[tuple[str, list[str]]] = []

@@ -4,7 +4,7 @@ import typing
 
 import click
 
-from nagcsu import constants, ledger, parameters, pipeline
+from nagcsu import constants, glossary, ledger, parameters, pipeline
 from nagcsu.algorithms import sensitivity
 from nagcsu.cli import context, display
 
@@ -135,6 +135,7 @@ def run(
         display.console.print(
             display.group_sensitivity_table(ranked_groups, method=group_rank_method)
         )
+        display.print_key(glossary.DETAILED_SENSITIVITY, glossary.GROUP_RANKING, ("Group",))
         echo_group_recommendation(shown_results, ranked_groups=ranked_groups)
         return
 
@@ -159,6 +160,7 @@ def run(
     ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
     display.console.print(display.sensitivity_table(shown_results, parameter_groups, ranks))
     display.console.print(display.group_sensitivity_table(ranked_groups, method=group_rank_method))
+    display.print_key(glossary.SENSITIVITY, glossary.GROUP_RANKING, ("Group",))
     echo_group_recommendation(shown_results, ranked_groups=ranked_groups)
 
 

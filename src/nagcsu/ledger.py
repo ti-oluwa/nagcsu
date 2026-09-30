@@ -123,9 +123,38 @@ def append(ledger_path: pathlib.Path | str, record: RunRecord) -> None:
     ledger_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def new_run_id(existing: list[RunRecord]) -> str:
-    """Return the next `run_NNNN` identifier given a project's existing records."""
-    return f"run_{len(existing):04d}"
+def new_run_id(existing: list[RunRecord], *, taken_ids: typing.Iterable[str] = ()) -> str:
+    """Return the next unused `run_NNNN` identifier.
+
+    Numbering continues after the highest `run_NNNN` seen among `existing`
+    and `taken_ids` (for example run directories still on disk), rather
+    than counting records. Counting breaks once records have been cleaned
+    out of the ledger: keeping only `run_0001` and `run_0002` and then
+    counting would hand out `run_0002` again.
+    """
+    numbers = [
+        int(match.group(1))
+        for name in [*(record.run_id for record in existing), *taken_ids]
+        if (match := re.fullmatch(r"run_(\d+)", name))
+    ]
+    return f"run_{(max(numbers) + 1 if numbers else 0):04d}"
+
+
+def save(ledger_path: pathlib.Path | str, records: list[RunRecord]) -> None:
+    """Replace the ledger at `ledger_path` with exactly `records`.
+
+    Written to a temporary file and renamed into place, so an interrupted
+    write cannot leave a half-written ledger behind.
+    """
+    ledger_path = pathlib.Path(ledger_path)
+    ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": LEDGER_SCHEMA_VERSION,
+        "runs": [dataclasses.asdict(record) for record in records],
+    }
+    temporary = ledger_path.with_suffix(ledger_path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    temporary.replace(ledger_path)
 
 
 def filter_records(

@@ -203,7 +203,7 @@ def search(
                         stage=f"{stage_prefix}descent/pass{pass_number}",
                     ):
                         j = evaluate(candidate_state)
-                    
+
                     evaluations += 1
                     trials.append(Trial(state=dict(candidate_state), j=j))
                     return j

@@ -5,6 +5,7 @@ data comes from `nagcsu.reporting` and `nagcsu.ledger`, which keeps the
 tables identical to the Markdown a report file contains.
 """
 
+import math
 import typing
 
 from rich import box
@@ -12,16 +13,40 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from nagcsu import constants, ledger, parameters, reporting
+from nagcsu import cleanup, constants, glossary, ledger, parameters, ranges, reporting
 from nagcsu.algorithms import coordinate_descent, sensitivity
 from nagcsu.prt import PrtReport
+
+KEY_ENABLED = True
+"""Whether `print_key` prints anything. Turned off by the global `--no-key` option."""
+
+
+def set_key_enabled(enabled: bool) -> None:
+    """Turn the table key on or off for this process."""
+    global KEY_ENABLED
+    KEY_ENABLED = enabled
+
 
 console = Console(highlight=False)
 """Shared console. `file` is resolved at print time, so click's test runner captures it."""
 
 
 def num(value: float | None, spec: str = ".4f") -> str:
-    return "-" if value is None else format(value, spec)
+    """Format `value`, showing "-" for missing and "n/a" for NaN or infinite."""
+    if value is None:
+        return "-"
+    if not math.isfinite(value):
+        return "n/a"
+    return format(value, spec)
+
+
+def probe_note(failed_probes: int) -> str:
+    """Short table note explaining a sensitivity result built from failed probes."""
+    if failed_probes == 1:
+        return "[yellow]~ one probe failed, swing estimated[/yellow]"
+    if failed_probes >= 2:
+        return "[red]both probes failed, no information[/red]"
+    return ""
 
 
 def j_cell(record: ledger.RunRecord) -> str:
@@ -263,9 +288,10 @@ def sensitivity_table(
             parameter_groups.get(result.parameter, "-"),
             f"{result.low_value:.6g}",
             f"{result.high_value:.6g}",
-            f"{result.j_at_low:.4f}",
-            f"{result.j_at_high:.4f}",
-            f"{result.swing:.4f}",
+            num(result.j_at_low) if math.isfinite(result.j_at_low) else "[red]FAILED[/red]",
+            num(result.j_at_high) if math.isfinite(result.j_at_high) else "[red]FAILED[/red]",
+            num(result.swing),
+            probe_note(result.failed_probes),
         )
     return table
 
@@ -284,13 +310,15 @@ def detailed_sensitivity_table(
     table.add_column("Swing (J)", justify="right")
     for name in vector_names:
         table.add_column(name, justify="right")
+    table.add_column("Note", overflow="fold")
     for result in results:
         table.add_row(
             f"{ranks.get(result.parameter, 0):g}",
             result.parameter,
             parameter_groups.get(result.parameter, "-"),
-            f"{result.swing:.4f}",
-            *(f"{result.vector_swings.get(name, 0.0):.4f}" for name in vector_names),
+            num(result.swing),
+            *(num(result.vector_swings.get(name, 0.0)) for name in vector_names),
+            probe_note(result.failed_probes),
         )
     return table
 
@@ -497,8 +525,131 @@ def print_run_report(
         console.print(parameter_history_table(histories))
     if prt_report is not None:
         console.print(health_table(prt_report))
-    suggestions = reporting.next_steps(records, target_j=target_j)
+    suggestions = reporting.get_next_steps(records, target_j=target_j)
     if suggestions:
         console.print(
             Panel("\n".join(f"- {s}" for s in suggestions), title="What to try next", expand=False)
         )
+    print_key(
+        glossary.OBJECTIVE if record.j is not None else (),
+        glossary.WELLS if show_wells and reporting.get_well_rows(record) else (),
+        glossary.STATE,
+        glossary.PARAMETER_HISTORY if histories else (),
+        ("Health",) if prt_report is not None else (),
+    )
+
+
+def cleanup_table(actions: typing.Sequence[cleanup.Action], *, scope: str) -> Table:
+    """What `nagcsu clean` is about to do, one row per run."""
+    table = make_table(f"Runs to clean (scope: {scope})")
+    for column in ("Run", "Strategy", "Stage", "J", "Ledger", "Files", "Freed"):
+        table.add_column(
+            column, justify="right" if column in ("J", "Freed") else "left", overflow="fold"
+        )
+    for action in actions:
+        record = action.target.record
+        if action.delete_whole_directory:
+            files = "whole directory"
+        elif action.files_to_delete or action.files_to_keep:
+            files = f"delete {len(action.files_to_delete)}, keep {len(action.files_to_keep)}"
+        else:
+            files = "-" if action.target.directory is None else "untouched"
+        size = action.bytes_to_free
+        table.add_row(
+            action.target.run_id,
+            (record.strategy or "-") if record else "[dim]no record[/dim]",
+            (record.stage or "-") if record else "-",
+            j_cell(record) if record else "-",
+            "remove" if action.remove_record else "keep",
+            files,
+            f"{size / 1024 / 1024:.1f} MB" if size >= 1024 * 1024 else f"{size / 1024:.0f} KB",
+        )
+    return table
+
+
+def protected_table(protected: typing.Sequence[tuple[cleanup.Target, str]]) -> Table:
+    """Runs that matched the selection but are kept, and why."""
+    table = make_table("Protected (not cleaned)")
+    table.add_column("Run")
+    table.add_column("J", justify="right")
+    table.add_column("Why")
+    for target, reason in protected:
+        table.add_row(target.run_id, j_cell(target.record) if target.record else "-", reason)
+    return table
+
+
+def range_table(suggestions: typing.Sequence[ranges.RangeSuggestion]) -> Table:
+    """Suggested starting ranges with the evidence behind each."""
+    table = make_table(
+        "Suggested search ranges",
+        caption="from single-parameter trials; other parameters were wherever the search had them",
+    )
+    for column in (
+        "Parameter",
+        "Group",
+        "Trials",
+        "Registered",
+        "Tried",
+        "Best",
+        "J span",
+        "Status",
+        "Suggested range",
+        "Why",
+    ):
+        table.add_column(
+            column,
+            justify="right" if column in ("Trials", "Best", "J span") else "left",
+            overflow="fold",
+        )
+    colors = {"bracketed": "green", "flat": "dim", "insufficient": "dim"}
+    for suggestion in suggestions:
+        suggested = (
+            "-"
+            if suggestion.low is None or suggestion.high is None
+            else f"{suggestion.low:.6g} to {suggestion.high:.6g}"
+        )
+        color = colors.get(suggestion.status, "yellow")
+        table.add_row(
+            suggestion.parameter,
+            suggestion.group or "-",
+            str(suggestion.trials),
+            f"{suggestion.registered_bounds[0]:g} to {suggestion.registered_bounds[1]:g}",
+            f"{suggestion.tried_low:.6g} to {suggestion.tried_high:.6g}",
+            f"{suggestion.best_value:.6g}",
+            num(suggestion.j_span),
+            f"[{color}]{suggestion.status}[/{color}]",
+            suggested,
+            suggestion.note,
+        )
+    return table
+
+
+def key_table(terms: typing.Iterable[str]) -> Table | None:
+    """A compact key explaining `terms`, or `None` if there is nothing to explain."""
+    entries = glossary.lookup(terms)
+    if not entries:
+        return None
+    table = Table(
+        title="Key",
+        box=box.SIMPLE,
+        header_style="bold dim",
+        title_style="bold dim",
+        show_edge=False,
+        pad_edge=False,
+    )
+    table.add_column("Term", style="bold", no_wrap=True)
+    table.add_column("What it is", overflow="fold")
+    table.add_column("What it tells you", overflow="fold")
+    for entry in entries:
+        table.add_row(entry.term, entry.meaning, entry.impact, style="dim")
+    return table
+
+
+def print_key(*term_groups: typing.Iterable[str]) -> None:
+    """Print one key covering every term in `term_groups`, unless keys are turned off."""
+    if not KEY_ENABLED:
+        return
+    terms = [term for group in term_groups for term in group]
+    table = key_table(terms)
+    if table is not None:
+        console.print(table)

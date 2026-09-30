@@ -2,7 +2,7 @@
 
 import click
 
-from nagcsu import ledger, prt, reporting
+from nagcsu import glossary, ledger, prt, ranges, reporting
 from nagcsu.cli import context, display
 
 
@@ -68,6 +68,7 @@ def list_(
         return
 
     display.console.print(display.ledger_table(filtered_records))
+    display.print_key(glossary.LEDGER, ("J",))
     best = ledger.get_best_record(filtered_records)
     if best:
         click.echo(f"Best in view: {best.run_id} (J={best.j:.4f})")
@@ -104,8 +105,57 @@ def parameters_(ctx: click.Context, group_name: str | None) -> None:
     if group_histories:
         display.console.print(display.group_history_table(group_histories))
 
-    for step in reporting.next_steps(records):
+    for step in reporting.get_next_steps(records):
         click.echo(f"- {step}")
+    display.print_key(glossary.PARAMETER_HISTORY, glossary.GROUP_HISTORY, ("Group",))
+
+
+@report.command(name="ranges")
+@click.option("--group", "group_name", default=None, help="Only show parameters in this group.")
+@click.option(
+    "--near-best",
+    default=ranges.NEAR_BEST_FRACTION,
+    show_default=True,
+    help="A tried value counts as good when its J is within this fraction of the J span above the best.",
+)
+@click.option(
+    "--min-values",
+    default=ranges.MIN_DISTINCT_VALUES,
+    show_default=True,
+    help="Distinct tried values needed before a range is suggested.",
+)
+@click.pass_context
+def ranges_(ctx: click.Context, group_name: str | None, near_best: float, min_values: int) -> None:
+    """Suggest a starting range per parameter from the trials logged so far.
+
+    For each parameter, finds the values that scored close to its best and
+    proposes a range around them. If the best value sits at the edge of
+    what was tried, the range extends past that edge instead of only
+    saying "widen it". Built from single-parameter trials, run with the
+    other parameters wherever the search had them at the time, so use it
+    as a starting point for the next batch, not a verdict.
+    """
+    project_config, _ = context.load(ctx)
+    records = ledger.load(project_config.get_resolved_path(project_config.ledger_path))
+    suggestions = ranges.suggest_ranges(
+        records, near_best_fraction=near_best, min_distinct_values=min_values
+    )
+    if group_name:
+        suggestions = [s for s in suggestions if s.group == group_name]
+    if not suggestions:
+        click.echo(
+            "No single-parameter trials to build ranges from. Run `match sweep` or `match auto` first."
+        )
+        return
+    display.console.print(display.range_table(suggestions))
+    display.print_key(glossary.RANGES, ("J span", "Best J", "Trials"))
+    flags = [s.range_flag() for s in suggestions if s.range_flag()]
+    if flags:
+        click.echo("\nStart the next batch with:")
+        click.echo("  nagcsu match auto " + " ".join(flags))
+    leave = [s.parameter for s in suggestions if s.status == "flat"]
+    if leave:
+        click.echo(f"Leave out (flat): {', '.join(leave)}")
 
 
 @report.command(name="show")

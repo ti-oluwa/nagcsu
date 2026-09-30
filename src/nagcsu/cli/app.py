@@ -10,6 +10,8 @@ import pathlib
 import click
 
 from nagcsu import __version__, constants
+from nagcsu.cli import display
+from nagcsu.cli.commands.clean import clean
 from nagcsu.cli.commands.init import init
 from nagcsu.cli.commands.match import match
 from nagcsu.cli.commands.plot import plot
@@ -28,8 +30,14 @@ from nagcsu.cli.commands.sensitivity import sensitivity_
     show_default=True,
     help="Path to the project config. Create one with `nagcsu init`.",
 )
+@click.option(
+    "--no-key",
+    is_flag=True,
+    envvar="NAGCSU_NO_KEY",
+    help="Do not print the explanatory key under tables (a written Markdown report always has one).",
+)
 @click.pass_context
-def cli(ctx: click.Context, config_path: str) -> None:
+def cli(ctx: click.Context, config_path: str, no_key: bool) -> None:
     """History matching and storage-scheduling CLI for the UGH-1 sector model.
 
     Start with `nagcsu init` in the repository root, then `nagcsu run`
@@ -40,10 +48,12 @@ def cli(ctx: click.Context, config_path: str) -> None:
     found.
     """
     ctx.ensure_object(dict)
+    display.set_key_enabled(not no_key)
     ctx.obj["config_path"] = pathlib.Path(config_path)
 
 
 cli.add_command(init)
+cli.add_command(clean)
 cli.add_command(run)
 cli.add_command(match)
 cli.add_command(sensitivity_)
