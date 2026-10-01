@@ -767,16 +767,20 @@ def resolve_tuning_space(
     :raises click.UsageError: when the filters leave nothing to tune.
     """
     ordered = groups if groups else list(constants.GROUP_TUNING_PRIORITY_ORDER)
-    unknown_groups = [g for g in ordered if g not in constants.GROUP_TUNING_PRIORITY_ORDER]
+    unknown_groups = [
+        group for group in ordered if group not in constants.GROUP_TUNING_PRIORITY_ORDER
+    ]
     if unknown_groups:
         raise click.BadParameter(
             f"Unknown group(s) {unknown_groups}. Valid groups: {list(constants.GROUP_TUNING_PRIORITY_ORDER)}"
         )
+
     unknown = [name for name in param_names if name not in parameters.PARAMETERS]
     if unknown:
         raise click.BadParameter(
             f"Unknown parameter(s): {unknown}. Run `nagcsu match list-parameters` to see valid names."
         )
+
     requested = set(param_names) | set(ranges)
     space: dict[str, dict[str, tuple[float, float]]] = {}
     for group in ordered:
@@ -787,6 +791,7 @@ def resolve_tuning_space(
         }
         if members:
             space[group] = members
+
     if not space:
         raise click.UsageError("The --groups, --param and --range filters leave nothing to tune.")
     return list(space), space
