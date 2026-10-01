@@ -94,6 +94,12 @@ class Target:
     directory: pathlib.Path | None
     """`None` when the run has a record but no directory on disk."""
 
+    record_count: int = 1
+    """How many ledger records share this run ID. More than 1 happens when
+    an older version reused an ID (for example two sweeps both writing
+    `sweep_00000`); `record` is then the latest of them, and cleaning the
+    run removes all of them, since they shared one directory."""
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class Action:
@@ -118,21 +124,37 @@ class Result:
 
 
 def collect_targets(records: list[ledger.RunRecord], output_root: pathlib.Path) -> list[Target]:
-    """List every run in the ledger, then every extra directory under `output_root`."""
-    by_id = {record.run_id: record for record in records}
+    """List every run in the ledger, then every extra directory under `output_root`.
+
+    One target per run ID. If several records share an ID, they share one
+    directory too (the later run overwrote the earlier), so they are one
+    target whose `record` is the latest and whose `record_count` says how
+    many records it stands for.
+    """
+    latest: dict[str, ledger.RunRecord] = {}
+    counts: dict[str, int] = {}
+    for record in records:
+        latest[record.run_id] = record
+        counts[record.run_id] = counts.get(record.run_id, 0) + 1
+
     directories = (
         {path.name: path for path in sorted(output_root.iterdir()) if path.is_dir()}
         if output_root.is_dir()
         else {}
     )
     targets = [
-        Target(run_id=record.run_id, record=record, directory=directories.get(record.run_id))
-        for record in records
+        Target(
+            run_id=run_id,
+            record=record,
+            directory=directories.get(run_id),
+            record_count=counts[run_id],
+        )
+        for run_id, record in latest.items()
     ]
     targets.extend(
         Target(run_id=name, record=None, directory=path)
         for name, path in directories.items()
-        if name not in by_id
+        if name not in latest
     )
     return targets
 
@@ -304,19 +326,25 @@ def execute(
     `output_root`; a directory that is a symlink is skipped, never followed.
     """
     removed_ids = {action.target.run_id for action in actions if action.remove_record}
+    records_removed = 0
     if removed_ids:
-        remaining = [
-            record for record in ledger.load(ledger_path) if record.run_id not in removed_ids
-        ]
+        before = ledger.load(ledger_path)
+        remaining = [record for record in before if record.run_id not in removed_ids]
+        records_removed = len(before) - len(remaining)
         ledger.save(ledger_path, remaining)
 
     directories_removed = files_removed = bytes_freed = 0
+    handled: set[pathlib.Path] = set()
     for action in actions:
         directory = action.target.directory
-        if directory is None or not is_inside(directory, output_root):
+        if directory is None or not directory.exists() or not is_inside(directory, output_root):
             continue
+        resolved = directory.resolve()
+        if resolved in handled:
+            continue
+        handled.add(resolved)
         if action.delete_whole_directory:
-            shutil.rmtree(directory)
+            shutil.rmtree(directory, ignore_errors=True)
             directories_removed += 1
             files_removed += len(action.files_to_delete)
             bytes_freed += action.bytes_to_free
@@ -332,7 +360,7 @@ def execute(
             directory.rmdir()
             directories_removed += 1
     return Result(
-        records_removed=len(removed_ids),
+        records_removed=records_removed,
         directories_removed=directories_removed,
         files_removed=files_removed,
         bytes_freed=bytes_freed,

@@ -121,7 +121,37 @@ ENTRIES: tuple[Entry, ...] = (
     Entry(
         "Swing",
         "How much J changed when this parameter alone was moved from its low probe to its high probe.",
-        "Bigger means more influential. Rank parameters by it to decide what to tune.",
+        "Bigger means more influential, in either direction. It does not say whether J got better, so read it together with Gain.",
+    ),
+    Entry(
+        "J at low / high",
+        "J when the parameter was set to its low probe value and to its high probe value.",
+        "Compare each with the current J: lower is an improvement. FAILED means that probe did not simulate.",
+    ),
+    Entry(
+        "Gain",
+        "How much J dropped at the better of the two probes. Zero when neither probe beat the current J.",
+        "The default ranking key. Zero means moving this parameter alone only made J worse, so tune it late.",
+    ),
+    Entry(
+        "Best side",
+        "Which probe, low or high, gave the gain.",
+        "Search on that side of the current value first.",
+    ),
+    Entry(
+        "Gap closed",
+        "The share of the distance from the current J to the target that this gain alone would close.",
+        "Shows whether one parameter can get you to the target or several are needed.",
+    ),
+    Entry(
+        "Total gain",
+        "Sum of a group's parameter gains, in J units.",
+        "How far J can drop if each parameter in the group moves one step the right way.",
+    ),
+    Entry(
+        "Gain share",
+        "A group's total gain as a fraction of all groups' gain.",
+        "Where the room to improve J actually is.",
     ),
     Entry(
         "pressure / watercut / gor",
@@ -286,15 +316,36 @@ STATE = (
     "Group",
 )
 TUNING_PATH = ("Start J / End J", "Change (J)", "Sims", "Passes", "Pass", "Window")
-SENSITIVITY = ("Swing", "Rank", "Low / High value", "~ one probe failed", "FAILED")
+SENSITIVITY = (
+    "Swing",
+    "Gain",
+    "Best side",
+    "Gap closed",
+    "Rank",
+    "Low / High value",
+    "J at low / high",
+    "~ one probe failed",
+    "FAILED",
+)
 DETAILED_SENSITIVITY = (
     "Swing",
+    "Gain",
+    "Best side",
+    "Gap closed",
     "Rank",
     "pressure / watercut / gor",
     "~ one probe failed",
     "FAILED",
 )
-GROUP_RANKING = ("Mean rank", "Rank sum", "Best rank", "Total swing", "Share")
+GROUP_RANKING = (
+    "Mean rank",
+    "Rank sum",
+    "Best rank",
+    "Total gain",
+    "Gain share",
+    "Total swing",
+    "Share",
+)
 LEDGER = ("Strategy", "Stage", "Parameter(s) / Value(s)", "Health", "*")
 PARAMETER_HISTORY = (
     "Trials",

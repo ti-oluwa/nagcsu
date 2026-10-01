@@ -46,9 +46,9 @@ def num(value: float | None, spec: str = ".4f") -> str:
 def probe_note(failed_probes: int) -> str:
     """Short table note explaining a sensitivity result built from failed probes."""
     if failed_probes == 1:
-        return "[yellow]~ one probe failed, swing estimated[/yellow]"
+        return "[yellow]~ one probe failed[/yellow]"
     if failed_probes >= 2:
-        return "[red]both probes failed, no information[/red]"
+        return "[red]both probes failed[/red]"
     return ""
 
 
@@ -284,33 +284,46 @@ def sensitivity_table(
     parameter_groups: dict[str, str],
     ranks: dict[str, float],
 ) -> Table:
-    """Parameter sensitivity with group, rank and the probe values used."""
-    table = make_table("Parameter sensitivity (most sensitive first)")
+    """Parameter sensitivity: rank, probes, swing, and the gain that drives the ranking."""
+    table = make_table("Parameter sensitivity (best first)")
     for column in (
         "Rank",
         "Parameter",
         "Group",
-        "Low value",
-        "High value",
-        "J at low",
-        "J at high",
+        "Low / High value",
+        "J at low / high",
         "Swing",
+        "Gain",
+        "Best side",
+        "Gap closed",
+        "Note",
     ):
-        table.add_column(column, justify="left" if column in ("Parameter", "Group") else "right")
-
+        table.add_column(
+            column,
+            justify="left" if column in ("Parameter", "Group", "Best side", "Note") else "right",
+            overflow="fold",
+        )
     for result in results:
+        j_low = num(result.j_at_low) if math.isfinite(result.j_at_low) else "[red]FAILED[/red]"
+        j_high = num(result.j_at_high) if math.isfinite(result.j_at_high) else "[red]FAILED[/red]"
         table.add_row(
             f"{ranks.get(result.parameter, 0):g}",
             result.parameter,
             parameter_groups.get(result.parameter, "-"),
-            f"{result.low_value:.6g}",
-            f"{result.high_value:.6g}",
-            num(result.j_at_low) if math.isfinite(result.j_at_low) else "[red]FAILED[/red]",
-            num(result.j_at_high) if math.isfinite(result.j_at_high) else "[red]FAILED[/red]",
+            f"{result.low_value:.6g} / {result.high_value:.6g}",
+            f"{j_low} / {j_high}",
             num(result.swing),
+            gain_cell(result.gain),
+            result.best_side or "[dim]none[/dim]",
+            "-" if result.gap_closed is None else f"{result.gap_closed * 100:.0f}%",
             probe_note(result.failed_probes),
         )
     return table
+
+
+def gain_cell(gain: float) -> str:
+    """A gain, green when J can drop and dim when no probe helped."""
+    return f"[green]{num(gain)}[/green]" if gain > 0 else f"[dim]{num(gain)}[/dim]"
 
 
 def detailed_sensitivity_table(
@@ -320,11 +333,14 @@ def detailed_sensitivity_table(
 ) -> Table:
     """Parameter sensitivity with one swing column per scored vector."""
     vector_names = sorted({name for result in results for name in result.vector_swings})
-    table = make_table("Parameter sensitivity by vector (most sensitive first)")
+    table = make_table("Parameter sensitivity by vector (best first)")
     table.add_column("Rank", justify="right")
     table.add_column("Parameter")
     table.add_column("Group")
     table.add_column("Swing (J)", justify="right")
+    table.add_column("Gain", justify="right")
+    table.add_column("Best side")
+    table.add_column("Gap closed", justify="right")
     for name in vector_names:
         table.add_column(name, justify="right")
 
@@ -335,6 +351,9 @@ def detailed_sensitivity_table(
             result.parameter,
             parameter_groups.get(result.parameter, "-"),
             num(result.swing),
+            gain_cell(result.gain),
+            result.best_side or "[dim]none[/dim]",
+            "-" if result.gap_closed is None else f"{result.gap_closed * 100:.0f}%",
             *(num(result.vector_swings.get(name, 0.0)) for name in vector_names),
             probe_note(result.failed_probes),
         )
@@ -345,9 +364,13 @@ def group_sensitivity_table(
     groups: typing.Sequence[sensitivity.GroupSensitivity], *, method: str
 ) -> Table:
     """Group ranking with every score, so the ordering can be audited."""
+    ranked_by = groups[0].ranked_by if groups else "swing"
     table = make_table(
         "Group sensitivity ranking",
-        caption=f"ordered by {method.replace('_', ' ')}; lower rank means more sensitive",
+        caption=(
+            f"parameters ranked by {ranked_by}; groups ordered by {method.replace('_', ' ')}; "
+            f"lower rank is better"
+        ),
     )
     for column in (
         "#",
@@ -356,6 +379,8 @@ def group_sensitivity_table(
         "Mean rank",
         "Rank sum",
         "Best rank",
+        "Total gain",
+        "Gain share",
         "Total swing",
         "Share",
         "Parameters (rank)",
@@ -377,6 +402,8 @@ def group_sensitivity_table(
             f"{group.mean_rank:.2f}",
             f"{group.rank_sum:g}",
             f"{group.best_rank:g}",
+            f"{group.total_gain:.4f}",
+            f"{group.gain_share * 100:.1f}%",
             f"{group.total_swing:.4f}",
             f"{group.swing_share * 100:.1f}%",
             members,
@@ -588,7 +615,13 @@ def cleanup_table(actions: typing.Sequence[cleanup.Action], *, scope: str) -> Ta
             (record.strategy or "-") if record else "[dim]no record[/dim]",
             (record.stage or "-") if record else "-",
             j_cell(record) if record else "-",
-            "remove" if action.remove_record else "keep",
+            (
+                f"remove ({action.target.record_count} records)"
+                if action.remove_record and action.target.record_count > 1
+                else "remove"
+                if action.remove_record
+                else "keep"
+            ),
             files,
             f"{size / 1024 / 1024:.1f} MB" if size >= 1024 * 1024 else f"{size / 1024:.0f} KB",
         )

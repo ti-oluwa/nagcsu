@@ -346,7 +346,19 @@ def random_(
     type=click.Choice(sensitivity.GROUP_RANK_METHODS),
     default="mean_rank",
     show_default=True,
-    help="How groups are ordered when '--order sensitivity' is used.",
+    help="How groups are ordered when '--order sensitivity' is used; see `sensitivity run --help`.",
+)
+@click.option(
+    "--rank-by",
+    "rank_by",
+    type=click.Choice(sensitivity.SORT_KEYS),
+    default="gain",
+    show_default=True,
+    help=(
+        "With --order sensitivity: gain ranks parameters by how far one step in their better "
+        "direction lowers J (so parameters that only make J worse are tuned late); swing ranks "
+        "by effect in either direction."
+    ),
 )
 @click.option(
     "--min-relative-swing",
@@ -397,6 +409,7 @@ def auto(
     order: str,
     group_rank_method: str,
     min_relative_swing: float,
+    rank_by: str,
     perturbation_fraction: float,
     window_shrink: float,
     quiet: bool,
@@ -492,20 +505,23 @@ def auto(
             evaluate,
             perturbation_fraction=perturbation_fraction,
             parameter_groups=parameter_groups,
+            target_j=resolved_target_j,
+            sort_by=rank_by,
         )
         context.warn_if_every_trial_failed(
             min((result.base_j for result in screen_results), default=float("inf")),
             command="match auto (sensitivity screen)",
         )
         swings = {result.parameter: result.swing for result in screen_results}
-        ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
+        ranks, ranked_groups = sensitivity.summarize(
+            screen_results, parameter_groups, rank_by=rank_by, method=group_rank_method
+        )
         plan = sensitivity.build_tuning_plan(
             ranked_groups, swings, min_relative_swing=min_relative_swing
         )
         if not plan:
             raise click.ClickException("The sensitivity screen left no parameter worth tuning.")
 
-        ranks = sensitivity.rank_parameters(swings)
         display.console.print(display.sensitivity_table(screen_results, parameter_groups, ranks))
         display.console.print(
             display.group_sensitivity_table(ranked_groups, method=group_rank_method)

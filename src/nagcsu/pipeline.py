@@ -151,6 +151,32 @@ def execute(
     )
 
 
+def make_run_id_allocator(config: ProjectConfig, prefix: str) -> typing.Callable[[], str]:
+    """Return a function that hands out `<prefix>_00000`, `<prefix>_00001`, ... never reusing an ID.
+
+    IDs already in the run ledger or already a directory under the output
+    root are skipped. Without that, every command that restarts its
+    counter at zero (a second `match sweep`, a second `sensitivity run`)
+    would reuse `sweep_00000`: overwriting the earlier run's output
+    directory and leaving two ledger records with the same ID.
+    """
+    ledger_path = config.get_resolved_path(config.ledger_path)
+    output_root = config.get_resolved_path(config.output_root)
+    taken = {record.run_id for record in ledger.load(ledger_path)}
+    if output_root.is_dir():
+        taken.update(path.name for path in output_root.iterdir())
+    counter = itertools.count()
+
+    def allocate() -> str:
+        while True:
+            run_id = f"{prefix}_{next(counter):05d}"
+            if run_id not in taken:
+                taken.add(run_id)
+                return run_id
+
+    return allocate
+
+
 def make_evaluate(
     config: ProjectConfig,
     base_deck: Deck,
@@ -163,7 +189,9 @@ def make_evaluate(
     Each call runs a full `execute` under a fresh, incrementing
     run ID (`<run_id_prefix>_00000`, `<run_id_prefix>_00001`, ...), so a
     search strategy's hundreds of trials each get their own output
-    directory rather than overwriting one another.
+    directory rather than overwriting one another. IDs already used by
+    an earlier command (in the ledger or on disk) are skipped, see
+    `make_run_id_allocator`.
 
     :param on_outcome: Called with each trial's `RunOutcome`, for example
         to append it to the run ledger. Optional; omit for a
@@ -173,10 +201,10 @@ def make_evaluate(
         produced no score, so a failed or unscoreable trial is never
         mistaken for the best one by a minimizing search strategy.
     """
-    counter = itertools.count()
+    allocate_run_id = make_run_id_allocator(config, run_id_prefix)
 
     def evaluate(state: dict[str, float]) -> float:
-        run_id = f"{run_id_prefix}_{next(counter):05d}"
+        run_id = allocate_run_id()
         outcome = execute(config, base_deck, state, run_id=run_id, score=True)
         if on_outcome is not None:
             on_outcome(outcome)
@@ -225,10 +253,10 @@ def make_evaluate_with_breakdown(
     See `make_evaluate` for the run-ID and ledger-logging behavior,
     which this mirrors exactly.
     """
-    counter = itertools.count()
+    allocate_run_id = make_run_id_allocator(config, run_id_prefix)
 
     def evaluate(state: dict[str, float]) -> EvaluationBreakdown:
-        run_id = f"{run_id_prefix}_{next(counter):05d}"
+        run_id = allocate_run_id()
         outcome = execute(config, base_deck, state, run_id=run_id, score=True)
         if on_outcome is not None:
             on_outcome(outcome)

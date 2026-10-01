@@ -52,9 +52,21 @@ def sensitivity_() -> None:
     default="mean_rank",
     show_default=True,
     help=(
-        "How groups are ordered. mean_rank: average of each member's swing rank, "
-        "ascending (fair between groups of different sizes). rank_sum: total of member "
-        "ranks, ascending (favors small groups). swing_share: total swing in J, descending."
+        "How groups are ordered. mean_rank: average of each member's rank, ascending "
+        "(fair between groups of different sizes). rank_sum: total of member ranks, ascending "
+        "(favors small groups). swing_share / gain_share: total swing or total gain in J, descending."
+    ),
+)
+@click.option(
+    "--rank-by",
+    "rank_by",
+    type=click.Choice(sensitivity.SORT_KEYS),
+    default="gain",
+    show_default=True,
+    help=(
+        "gain: rank parameters by how far one step in their better direction lowers J "
+        "(parameters that only make J worse score zero). swing: rank by effect in either "
+        "direction, which also rewards parameters whose every probe made J worse."
     ),
 )
 @context.baseline_options
@@ -68,6 +80,7 @@ def run(
     top_n: int | None,
     detailed: bool,
     group_rank_method: str,
+    rank_by: str,
     baseline_raw: str | None,
     base_deck_raw: str | None,
     wells_raw: str | None,
@@ -138,10 +151,12 @@ def run(
             evaluate,
             perturbation_fraction=perturbation_fraction,
             parameter_groups=parameter_groups,
+            target_j=project_config.objective.target_j,
+            sort_by=rank_by,
         )
-        swings = {result.parameter: result.swing for result in results}
-        ranks = sensitivity.rank_parameters(swings)
-        ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
+        ranks, ranked_groups = sensitivity.summarize(
+            results, parameter_groups, rank_by=rank_by, method=group_rank_method
+        )
         shown_results = results[:top_n] if top_n else results
         if results:
             display.console.print(f"Base J = {results[0].base_j:.4f}")
@@ -168,13 +183,15 @@ def run(
         evaluate,
         perturbation_fraction=perturbation_fraction,
         parameter_groups=parameter_groups,
+        target_j=project_config.objective.target_j,
+        sort_by=rank_by,
     )
 
     shown_results = results[:top_n] if top_n else results
     click.echo(f"Base J = {results[0].base_j:.4f}" if results else "No parameters to test.")
-    swings = {result.parameter: result.swing for result in results}
-    ranks = sensitivity.rank_parameters(swings)
-    ranked_groups = sensitivity.rank_groups(swings, parameter_groups, method=group_rank_method)
+    ranks, ranked_groups = sensitivity.summarize(
+        results, parameter_groups, rank_by=rank_by, method=group_rank_method
+    )
     display.console.print(display.sensitivity_table(shown_results, parameter_groups, ranks))
     display.console.print(display.group_sensitivity_table(ranked_groups, method=group_rank_method))
     display.print_key(glossary.SENSITIVITY, glossary.GROUP_RANKING, ("Group",))
@@ -234,6 +251,6 @@ def echo_detailed_results(results: list[sensitivity.DetailedSensitivityResult]) 
     groups = {
         result.parameter: parameters.PARAMETERS[result.parameter].group for result in results
     }
-    ranks = sensitivity.rank_parameters({result.parameter: result.swing for result in results})
+    ranks, _ = sensitivity.summarize(results, groups)
     click.echo(f"Base J = {results[0].base_j:.4f}\n")
     display.console.print(display.detailed_sensitivity_table(results, groups, ranks))

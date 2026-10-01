@@ -453,18 +453,21 @@ def render_run_report(
 
     if sensitivity_results:
         lines.append("")
-        key_terms.extend(("Swing", "Rank"))
+        key_terms.extend(("Swing", "Gain", "Best side", "Rank"))
         lines.append("## Parameter sensitivity")
         lines.append("")
         lines.append(
-            "Ranked by local sensitivity (how much J moved when this parameter "
-            "alone was perturbed, others held fixed):"
+            "Ranked by gain: how far J dropped when this parameter alone moved one step "
+            "in its better direction (others held fixed). Swing is the effect in either direction."
         )
         lines.append("")
-        lines.append("| Parameter | Swing in J |")
-        lines.append("| --- | --- |")
+        lines.append("| Parameter | Gain | Best side | Swing |")
+        lines.append("| --- | --- | --- | --- |")
         for result in sensitivity_results[:8]:
-            lines.append(f"| {result.parameter} | {result.swing:.4f} |")
+            lines.append(
+                f"| {result.parameter} | {getattr(result, 'gain', 0.0):.4f} | "
+                f"{getattr(result, 'best_side', None) or 'none'} | {result.swing:.4f} |"
+            )
 
     suggestions = next_steps(records or [record], target_j=target_j)
     if suggestions:

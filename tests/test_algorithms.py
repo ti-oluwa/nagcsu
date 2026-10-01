@@ -86,9 +86,23 @@ def test_coordinate_descent_stops_at_target_without_touching_later_groups() -> N
 
 def test_sensitivity_ranks_the_more_influential_parameter_first() -> None:
     results, trials = sensitivity.run(
-        {"a": 0.0, "b": 0.0}, {"a": (-10.0, 10.0), "b": (-10.0, 10.0)}, quadratic_bowl
+        {"a": 0.0, "b": 0.0},
+        {"a": (-10.0, 10.0), "b": (-10.0, 10.0)},
+        quadratic_bowl,
+        sort_by="swing",
     )
     # b's coefficient (0.002) is twice a's (0.001), so it should swing J more.
     assert results[0].parameter == "b"
     assert results[0].swing > results[1].swing
     assert len(trials) == 5  # base + (low, high) for each of 2 parameters
+
+
+def test_sensitivity_default_order_puts_the_parameter_that_can_lower_j_first() -> None:
+    # The bowl's minimum is at a=5 (far from the base) and b=-3 (near it), so
+    # one step toward the optimum helps `a` more than `b`, although `b` swings more.
+    results, _ = sensitivity.run(
+        {"a": 0.0, "b": 0.0}, {"a": (-10.0, 10.0), "b": (-10.0, 10.0)}, quadratic_bowl
+    )
+    assert [result.parameter for result in results] == ["a", "b"]
+    assert results[0].best_side == "high" and results[1].best_side == "low"
+    assert results[0].gain > results[1].gain > 0
